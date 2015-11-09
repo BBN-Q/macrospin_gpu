@@ -11,6 +11,7 @@ from   demag import demagCylinder
 from   tqdm import *
 import time
 
+# Define the GPU Context
 ctx   = cl.create_some_context()
 queue = cl.CommandQueue(ctx)
 mf    = cl.mem_flags
@@ -102,17 +103,18 @@ reduce_m.set_scalar_arg_dtypes([None, None, np.int32])
 normalize_m = prg.normalize_m
 
 # Data dimensions
-realizations  = 1  # Averages over different thermal realizations
-current_steps = 64
-tilt_steps    = 32
+realizations  = 16  # Averages over different thermal realizations
+current_steps = 128
+tilt_steps    = 128
 N             = current_steps*tilt_steps*realizations
 
+# Declare the GPU bound arrays
 m             = cl.array.zeros(queue, N, cl.array.vec.float4)
 dW            = cl.array.zeros(queue, N, cl.array.vec.float4)
 phase_diagram = cl.array.zeros(queue, current_steps*tilt_steps, np.float32)
 
 def gaussian_pulse_shape(time, rise_time=65.0e-12, fall_time=100e-12):
-    # HWHM to sigma
+    # Convert HWHM to sigma
     rise_time = rise_time/(2.0*2.3548)
     fall_time = fall_time/(2.0*2.3548)
     if time<pause_before:
@@ -130,42 +132,35 @@ def current_tilt():
     initial_m[:] = (1,0,0,0)
     cl.enqueue_copy(queue, m.data, initial_m)
 
+    # Create the GPU buffers that contain the phase diagram parameters
     tilts_np    = np.linspace(minTilt, maxTilt, tilt_steps).astype(np.float32)*np.pi/180.0
     currents_np = np.linspace(minCurrent, maxCurrent, current_steps).astype(np.float32)
-
     tilts       = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=tilts_np)
     currents    = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=currents_np)
     
-    ms = []
-    # evolve(queue, (current_steps*realizations, tilt_steps), (realizations, 1), m.data, dW.data, currents, tilts, 0.0).wait()
-
+    # Time evolution taken care of by the host, GPU integrates individual time steps.
     for i, t in enumerate(tqdm(np.linspace(0.0, total_time, total_steps), desc='Evolving', leave=True)):
-    #   for t in np.linspace(0.0, 1.0e-12, 10):
-        # Fill out the Weiner process
+
+        # Generate random numbers for the stochastic process
         if temperature > 0:
             rg.fill_normal(dW)
 
         # Where are we in the pulse?
         pulse_value = gaussian_pulse_shape(t)
-        # Actually evolve
+
+        # Run a single LLG evolution step
         evolve(queue, (current_steps*realizations, tilt_steps), (realizations, 1), m.data, dW.data, currents, tilts, pulse_value).wait()
 
+        # Periodic Normalizations
         if (i%(normalizeInterval)==0):
-            ms.append(m.get()['x'][0])
             normalize_m(queue, (current_steps*realizations, tilt_steps), (realizations, 1), m.data,).wait()
 
-    # plt.plot(ms)
-    # plt.show()
-    reduce_m(queue, (current_steps*realizations, tilt_steps), (realizations, 1), m.data, phase_diagram.data, realizations).wait()
-    return m.get()['x'].reshape( tilt_steps, current_steps).transpose()
-    # return ms
+    reduce_m(queue, (current_steps, tilt_steps), (1,1), m.data, phase_diagram.data, realizations).wait()
+    return phase_diagram.get().reshape( tilt_steps, current_steps).transpose()
+
 
 if __name__ == '__main__':
     phase_diagram = current_tilt()
-    # print("ALSKDjalskdjasl")
-    # plt.plot(phase_diagram)
-    # plt.show()
-    # np.savetxt("PhaseDiagram-TiltCurrent-%0.2fns-Hpma%.2fOe-%dK%s.txt" % (pulse_duration*1e9, hPMA, temperature, '-nTron' if nTron_pulse else ''),  np.transpose(phase_diagram))
 
     pt = pulse_duration*1e9
     maxCurrent = maxCurrent*1e-8
@@ -180,32 +175,3 @@ if __name__ == '__main__':
     plt1.gca().set_xlabel('Polarizer Tilt (deg)')
     plt1.gca().set_ylabel(r'Current Density (10$^8$A/cm$^2$)')
     plt.show()
-
-# rg.fill_normal(dW)
-
-# m_local = m.get()
-# plt.hist(m_local['x'], 50, normed=1, facecolor='red', alpha=0.25)
-# plt.hist(m_local['y'], 50, normed=1, facecolor='green', alpha=0.25)
-# plt.hist(m_local['z'], 50, normed=1, facecolor='blue', alpha=0.25)
-# do_something = prg.do_something
-# do_something.set_scalar_arg_dtypes([None, np.float32])
-# do_something(queue, m.shape, None, m.data, 4.0)
-# m_local = m.get()
-# plt.hist(m_local['x'], 50, normed=1, facecolor='red', alpha=0.25)
-# plt.hist(m_local['y'], 50, normed=1, facecolor='green', alpha=0.25)
-# plt.hist(m_local['z'], 50, normed=1, facecolor='blue', alpha=0.25)
-
-
-# res_g = cl.Buffer(ctx, mf.WRITE_ONLY, a_np.nbytes)
-# prg.sum(queue, a_np.shape, None, a_g, b_g, res_g)
-
-# res_np = np.empty_like(a_np)
-# cl.enqueue_copy(queue, res_np, res_g)
-
-# n, bins, patches = plt.hist(c_np.get(), 100, normed=1, facecolor='green', alpha=0.75)
-# print(bins)
-
-# # Check on CPU with Numpy:
-# print(res_np - (a_np + b_np))
-# print(np.linalg.norm(res_np - (a_np + b_np)))
-# plt.show()
