@@ -63,7 +63,7 @@ pillar_vol    = pillar_area*pillar_thick
 
 # Other Constants
 Ms          = 640.0             # Saturation magnetization (emu/cm^3)
-temperature = 200.0               # System temperature (K)
+temperature = 4.0               # System temperature (K)
 timeUnit    = 1.0/(gamma*Ms)    # Reduced units for numerical convnience
 realdt      = 1.0e-13           # Actual time step (s)
 dt          = realdt/timeUnit   # time in units of $\gamma M_s$
@@ -83,9 +83,9 @@ Nxx, Nyy, Nzz = demagCylinder(pillar_length, pillar_width, pillar_thick, cgs=Tru
 
 # Pulse characteristics
 min_current        = 0.0e8 # A/cm^2
-max_current        = 0.8e8
-min_duration       = 0.0e-12
-max_duration       = 1.4e-9
+max_current        = 1.2e8
+min_duration       = 0.3e-9
+max_duration       = 0.3e-9
 pause_before       = 0.3e-9
 pause_after        = 2.0e-9
 total_time         = max_duration + pause_before + pause_after
@@ -105,7 +105,7 @@ Nzz       = Nzz - hPMA/Ms # from compensation
 
 class GLPlotWidget(QGLWidget):
     # default window size
-    width, height = 640, 480
+    width, height = 1280, 1024
 
     def initialize_buffers(self):
         """Initialize OpenGL and OpenCL buffers and interop objects,
@@ -164,8 +164,8 @@ class GLPlotWidget(QGLWidget):
 
         # Data dimensions
         self.realizations   = 8 # Averages over different realizations of the noise process
-        self.current_steps  = 32
-        self.duration_steps = 32
+        self.current_steps  = 128
+        self.duration_steps = 8
         self.N              = self.current_steps*self.duration_steps*self.realizations
         self.time_points    = 64 # How many points to store as a function of time
 
@@ -271,8 +271,9 @@ class GLPlotWidget(QGLWidget):
         """Initialize OpenGL, VBOs, upload data on the GPU, etc.
         """
         # Rotation amount
-        self.rotate_x = 0.0
-        self.rotate_y = 0.0
+        self.delta_x  = 0.0
+        self.delta_y  = 0.0
+        self.distance = -7.0
         # initialize OpenCL first
         self.initialize_buffers()
         # set background color
@@ -290,9 +291,12 @@ class GLPlotWidget(QGLWidget):
         gl.glLoadIdentity()
 
         # Move back
-        gl.glTranslatef(0.0, 0.0, -6.0)
-        gl.glRotatef(self.rotate_x, 1, 0, 0)
-        gl.glRotatef(self.rotate_y, 0, 1, 0) 
+        gl.glTranslatef(0.0, 0.0, self.distance)
+        gl.glRotatef(-90.0, 1, 0, 0)
+        # gl.glRotatef()
+        gl.glRotatef(self.delta_y, 1, 0, 0) 
+        gl.glRotatef(self.delta_x, 0, 0, 1)
+        # gl.glRotatef(self.delta_y, 0, 0, 1) 
 
         gl.glEnable(gl.GL_BLEND)
         gl.glEnable(gl.GL_POINT_SMOOTH)
@@ -334,6 +338,11 @@ class GLPlotWidget(QGLWidget):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+           self.current_iter = 0
+           self.current_time = 0.0
+
     def mousePressEvent(self, event):
         self.last_pos = event.posF()
 
@@ -346,10 +355,13 @@ class GLPlotWidget(QGLWidget):
             if event.modifiers() & QtCore.Qt.ControlModifier:
                 pass
             else:
-                self.rotate_x += 0.2*dy
-                self.rotate_y += 0.2*dx
+                self.delta_x += 0.2*dx
+                self.delta_y += 0.2*dy
 
         self.last_pos = event.posF()
+
+    def wheelEvent(self, event):
+        self.distance += 0.002*event.delta()
 
 if __name__ == '__main__':
     import sys
@@ -372,6 +384,9 @@ if __name__ == '__main__':
             timer.timeout.connect(self.widget.updateGL)
             timer.start(50)
             self.show()
+
+        def keyPressEvent(self, event):
+            self.widget.keyPressEvent(event)
 
     # create the Qt App and window
     app = QtGui.QApplication(sys.argv)
