@@ -82,18 +82,23 @@ __kernel void evolve(__global float4 *m, __global float4 *dW, __global float *cu
 	m[i] = m_loc + dt*deterministic_part + stochastic_part;
 }
 
-__kernel void update_m_of_t(__global float4 *m, __global float4 *m_of_t, int time_points, int realizations, int current_index) {
+__kernel void update_m_of_t(__global float4 *m, __global float4 *m_of_t, __global float4 *col, int time_points, int realizations, int current_index) {
   int i = get_group_id(0) + get_group_id(1)*get_global_size(0);
 
 	float4 mloc = m[i*realizations];
+	float4 temp_col;
 	mloc.w = 1.0f;
 	m_of_t[i*time_points + time_points - 1] = mloc;
+	temp_col.x = (float)get_group_id(0)/(float)get_global_size(0);
+	temp_col.y = (float)get_group_id(1)/(float)get_global_size(1);
+	temp_col.z = 0.0f;
 
 	// Shuffle... this is probably horribly inefficient
 	for (int j=0; j<time_points-1; j++ ) {
 		m_of_t[i*time_points + j] = m_of_t[i*time_points + j + 1];
+		temp_col.w = (float)j/(float)(time_points-1);
+		col[i*time_points + j] = temp_col;
 	}
-
 }
 
 __kernel void normalize_m(__global float4 *m) {

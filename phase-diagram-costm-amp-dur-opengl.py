@@ -63,7 +63,7 @@ pillar_vol    = pillar_area*pillar_thick
 
 # Other Constants
 Ms          = 640.0             # Saturation magnetization (emu/cm^3)
-temperature = 40.0               # System temperature (K)
+temperature = 200.0               # System temperature (K)
 timeUnit    = 1.0/(gamma*Ms)    # Reduced units for numerical convnience
 realdt      = 1.0e-13           # Actual time step (s)
 dt          = realdt/timeUnit   # time in units of $\gamma M_s$
@@ -154,7 +154,7 @@ class GLPlotWidget(QGLWidget):
         self.reduce_m.set_scalar_arg_dtypes([None, None, np.int32])
         self.normalize_m = self.prg.normalize_m
         self.update_m_of_t = self.prg.update_m_of_t
-        self.update_m_of_t.set_scalar_arg_dtypes([None, None, np.int32, np.int32, np.int32])
+        self.update_m_of_t.set_scalar_arg_dtypes([None, None, None, np.int32, np.int32, np.int32])
 
         # release the PyOpenCL queue
         self.queue.finish()
@@ -167,7 +167,7 @@ class GLPlotWidget(QGLWidget):
         self.current_steps  = 32
         self.duration_steps = 32
         self.N              = self.current_steps*self.duration_steps*self.realizations
-        self.time_points    = 32 # How many points to store as a function of time
+        self.time_points    = 64 # How many points to store as a function of time
 
         # Current state
         self.current_iter      = 0
@@ -183,6 +183,7 @@ class GLPlotWidget(QGLWidget):
         self.durations_np  = np.linspace(min_duration, max_duration, self.duration_steps).astype(np.float32)
         self.currents_np   = np.linspace(min_current, max_current, self.current_steps).astype(np.float32)
         self.m_of_t_np     = np.ndarray((self.current_steps*self.duration_steps*self.time_points, 4), dtype=np.float32)
+        self.colors_np     = np.ndarray((self.current_steps*self.duration_steps*self.time_points, 4), dtype=np.float32)
         self.durations     = cl.Buffer(self.ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=self.durations_np)
         self.currents      = cl.Buffer(self.ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=self.currents_np)
 
@@ -190,6 +191,10 @@ class GLPlotWidget(QGLWidget):
         initial_m = np.zeros(self.N, dtype=cl.array.vec.float4)
         initial_m[:] = (1,0,0,0)
         cl.enqueue_copy(self.queue, self.m.data, initial_m)
+
+        self.colors_np[:,:] = [1.,1.,1.,1.] # White particles
+        self.colbuf = vbo.VBO(data=self.colors_np, usage=gl.GL_DYNAMIC_DRAW, target=gl.GL_ARRAY_BUFFER)
+        self.colbuf.bind()
 
         # For the glMultiDraw command we need an array of offsets and draw lengths
         self.start_indices = np.arange( 0, self.current_steps*self.duration_steps*self.time_points, self.time_points, dtype=np.int32 )
@@ -201,6 +206,7 @@ class GLPlotWidget(QGLWidget):
 
         # create an interop object to access to GL VBO from OpenCL
         self.glclbuf = cl.GLBuffer(self.ctx, cl.mem_flags.READ_WRITE, int(self.glbuf.buffers[0]))
+        self.colclbuf = cl.GLBuffer(self.ctx, cl.mem_flags.READ_WRITE, int(self.colbuf.buffers[0]))
 
     def execute(self):
         """Execute the OpenCL kernel.
@@ -209,7 +215,7 @@ class GLPlotWidget(QGLWidget):
         start_time = time.time()
 
         # get secure access to GL-CL interop objects
-        cl.enqueue_acquire_gl_objects(self.queue, [self.glclbuf])
+        cl.enqueue_acquire_gl_objects(self.queue, [self.glclbuf, self.colclbuf])
         
         # Execute the kernel for the duration of the timer cycle
         while time.time()-start_time < 40.0e-3:
@@ -217,7 +223,7 @@ class GLPlotWidget(QGLWidget):
                 for i in range(self.time_points):
                         self.update_m_of_t(self.queue,(self.current_steps, self.duration_steps),
                                               (1,1),
-                                              self.m.data, self.glclbuf,
+                                              self.m.data, self.glclbuf, self.colclbuf,
                                               self.time_points, self.realizations,
                                               i%self.time_points).wait()
 
@@ -243,14 +249,14 @@ class GLPlotWidget(QGLWidget):
             if (self.current_iter%(display_interval)==0):
                 self.update_m_of_t(self.queue,(self.current_steps, self.duration_steps),
                                               (1,1),
-                                              self.m.data, self.glclbuf,
+                                              self.m.data, self.glclbuf, self.colclbuf,
                                               self.time_points, self.realizations,
                                               self.current_timepoint%self.time_points).wait()
                 self.current_timepoint += 1
 
 
         # release access to the GL-CL interop objects
-        cl.enqueue_release_gl_objects(self.queue, [self.glclbuf])
+        cl.enqueue_release_gl_objects(self.queue, [self.glclbuf, self.colclbuf])
         self.queue.finish()
         gl.glFlush()
 
@@ -284,7 +290,7 @@ class GLPlotWidget(QGLWidget):
         gl.glLoadIdentity()
 
         # Move back
-        gl.glTranslatef(0.0, 0.0, -8.0)
+        gl.glTranslatef(0.0, 0.0, -6.0)
         gl.glRotatef(self.rotate_x, 1, 0, 0)
         gl.glRotatef(self.rotate_y, 0, 1, 0) 
 
@@ -292,15 +298,16 @@ class GLPlotWidget(QGLWidget):
         gl.glEnable(gl.GL_POINT_SMOOTH)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        # set yellow color for subsequent drawing rendering calls
-        gl.glColor(1,0.8,0)
-        # gl.glPointSize(2)
         gl.glEnable(gl.GL_LINE_SMOOTH)
         gl.glLineWidth(1.0)
 
+        
+        self.colbuf.bind()
+        gl.glColorPointer(4, gl.GL_FLOAT, 0, self.colbuf)
         self.glbuf.bind()
         gl.glVertexPointer(4, gl.GL_FLOAT, 0, self.glbuf)
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        gl.glEnableClientState(gl.GL_COLOR_ARRAY)
 
         # gl.glDrawArrays(gl.GL_POINTS, 0, self.time_points*4)#self.current_steps*self.duration_steps*self.time_points)
         
@@ -308,6 +315,7 @@ class GLPlotWidget(QGLWidget):
                              self.start_indices, self.draw_lengths,
                              self.current_steps*self.duration_steps)
 
+        gl.glDisableClientState(gl.GL_COLOR_ARRAY)
         gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
         gl.glDisable(gl.GL_BLEND)
 
