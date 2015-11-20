@@ -32,7 +32,7 @@ queue = cl.CommandQueue(ctx)
 mf    = cl.mem_flags
 
 # Define random number generator
-rg = ran.RanluxGenerator(queue) 
+rg = ran.RanluxGenerator(queue, luxury=0) 
 
 # Load kernel
 with open("costm-amp-dur.cl") as template_file:
@@ -55,14 +55,14 @@ pillar_vol    = pillar_area*pillar_thick
 
 # Other Constants
 Ms          = 640.0             # Saturation magnetization (emu/cm^3)
-temperature = 40.0               # System temperature (K)
+temperature = 0.0               # System temperature (K)
 timeUnit    = 1.0/(gamma*Ms)    # Reduced units for numerical convnience
 realdt      = 2.0e-13           # Actual time step (s)
 dt          = realdt/timeUnit   # time in units of $\gamma M_s$
 sqrtDt      = np.sqrt(dt)       # Convenience
 damping     = 0.05              # Gilbert damping factor
-pol_op      = 0.16              # Spin torque polarization OP
-pol_ip      = 0.37              # Spin torque polarization IP
+pol_op      = 0.15              # Spin torque polarization OP
+pol_ip      = 0.30              # Spin torque polarization IP
 lambda_op   = 1.49              # Spin torque asymmetry OP
 lambda_ip   = 1.49              # Spin torque asymmetry IP
 nu          = np.sqrt(2.0*damping*kB*temperature/(pillar_vol*Ms*Ms)) # Width of thermal distribution
@@ -70,6 +70,10 @@ nu          = np.sqrt(2.0*damping*kB*temperature/(pillar_vol*Ms*Ms)) # Width of 
 # Spin torque prefactors, things crammed together for numerical efficiency
 stt_op_pre  = 2.0*(lambda_op**2)*pol_op*hbar*0.1/(2.0*ech*Ms*Ms*pillar_thick*damping) # 0.1 for Amps->abAmps
 stt_ip_pre  = 2.0*(lambda_ip**2)*pol_ip*hbar*0.1/(2.0*ech*Ms*Ms*pillar_thick*damping) # 0.1 for Amps->abAmps
+
+print(stt_op_pre)
+print(stt_ip_pre)
+sys.exit()
 
 Nxx, Nyy, Nzz = demagCylinder(pillar_length, pillar_width, pillar_thick, cgs=True)
 
@@ -79,7 +83,7 @@ max_current       = 0.8e8
 min_duration      = 0.0e-12
 max_duration      = 1.4e-9
 pause_before      = 0.3e-9
-pause_after       = 2.0e-9
+pause_after       = 0.8e-9
 total_time        = max_duration + pause_before + pause_after
 total_steps       = int(total_time/realdt)
 normalizeInterval = 50
@@ -130,9 +134,9 @@ reduce_m.set_scalar_arg_dtypes([None, None, np.int32])
 normalize_m = prg.normalize_m
 
 # Data dimensions
-realizations   = 64 # Averages over different realizations of the noise process
-current_steps  = 64
-duration_steps = 64
+realizations   = 1 # Averages over different realizations of the noise process
+current_steps  = 128
+duration_steps = 128
 N              = current_steps*duration_steps*realizations
 time_points    = 20 # How many points to store as a function of time
 time_interval  = 200 # The interval between adding new points
@@ -146,7 +150,7 @@ phase_diagram = cl.array.zeros(queue, current_steps*duration_steps, np.float32)
 def amp_dur():
 
     initial_m = np.zeros(N, dtype=cl.array.vec.float4)
-    initial_m[:] = (1,0,0,0)
+    initial_m[:] = (-1,0,0,0)
     cl.enqueue_copy(queue, m.data, initial_m)
 
     # Create the GPU buffers that contain the phase diagram parameters

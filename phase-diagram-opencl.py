@@ -3,16 +3,41 @@
 
 from __future__ import absolute_import, print_function
 import numpy as np
+
+# PyQt4 imports
+from   PyQt4 import QtGui, QtCore, QtOpenGL
+from   PyQt4.QtOpenGL import QGLWidget
+
+# PyOpenGL imports
+import OpenGL.GL as gl
+import OpenGL.arrays.vbo as glvbo
+
+# PyOpenCL imports
 import pyopencl as cl
 import pyopencl.clrandom as ran
+from   pyopencl.tools import get_gl_sharing_context_properties
 from   jinja2 import Template
-import matplotlib.pyplot as plt
+
+# Physics imports
 from   demag import demagCylinder
+
+# Other imports
+import matplotlib.pyplot as plt
 from   tqdm import *
 import time
+import sys
 
-# Define the GPU Context
-ctx   = cl.create_some_context()
+# Define the GPU Context, with OpenGL context sharing.
+# Handling OSX specially...
+platforms = cl.get_platforms()
+# ctx = context.create_some_context()
+if sys.platform == "darwin":
+    ctx = cl.Context(properties=get_gl_sharing_context_properties(),
+                     devices=[])
+else:
+    ctx = cl.Context(properties=[
+                        (cl.context_properties.PLATFORM, platforms[0])]
+                        + get_gl_sharing_context_properties())
 queue = cl.CommandQueue(ctx)
 mf    = cl.mem_flags
 

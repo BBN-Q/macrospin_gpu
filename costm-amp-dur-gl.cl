@@ -90,7 +90,7 @@ __kernel void update_m_of_t(__global float4 *m, __global float4 *m_of_t, __globa
 	mloc.w = 1.0f;
 	m_of_t[i*time_points + time_points - 1] = mloc;
 	temp_col.x = (float)get_group_id(0)/(float)get_global_size(0);
-	temp_col.y = 1.0f; //(float)get_group_id(1)/(float)get_global_size(1);
+	temp_col.y = 0.8f; //(float)get_group_id(1)/(float)get_global_size(1);
 	temp_col.z = 0.0f;
 
 	// Shuffle... this is probably horribly inefficient

@@ -116,7 +116,7 @@ __global__ void normalizeM(float4 *m) {
   const int i = threadIdx.x + (((gridDim.x * blockIdx.y) + blockIdx.x)*blockDim.x); 
   
   float4 mloc = m[i];
-  m[i] = magInv(mloc)*mloc;
+  m[i] = rsqrt(mloc*mloc)*mloc;
 }
 
 __global__ void resetM(float4 *m, float mx, float my, float mz) {

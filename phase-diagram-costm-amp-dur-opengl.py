@@ -14,9 +14,6 @@ import OpenGL.GLU as glu
 import OpenGL.GLUT as glut
 import OpenGL.arrays.vbo as vbo
 
-# import glutil
-# from vector import Vec
-
 # PyOpenCL imports
 import pyopencl as cl
 import pyopencl.clrandom as ran
@@ -27,7 +24,6 @@ from   jinja2 import Template
 from   demag import demagCylinder
 
 # Other imports
-import matplotlib.pyplot as plt
 from   tqdm import *
 import time
 
@@ -63,7 +59,7 @@ pillar_vol    = pillar_area*pillar_thick
 
 # Other Constants
 Ms          = 640.0             # Saturation magnetization (emu/cm^3)
-temperature = 4.0               # System temperature (K)
+temperature = 40.0               # System temperature (K)
 timeUnit    = 1.0/(gamma*Ms)    # Reduced units for numerical convnience
 realdt      = 1.0e-13           # Actual time step (s)
 dt          = realdt/timeUnit   # time in units of $\gamma M_s$
@@ -84,8 +80,8 @@ Nxx, Nyy, Nzz = demagCylinder(pillar_length, pillar_width, pillar_thick, cgs=Tru
 # Pulse characteristics
 min_current        = 0.0e8 # A/cm^2
 max_current        = 1.2e8
-min_duration       = 0.3e-9
-max_duration       = 0.3e-9
+min_duration       = 0.6e-9
+max_duration       = 0.6e-9
 pause_before       = 0.3e-9
 pause_after        = 2.0e-9
 total_time         = max_duration + pause_before + pause_after
@@ -164,10 +160,10 @@ class GLPlotWidget(QGLWidget):
 
         # Data dimensions
         self.realizations   = 8 # Averages over different realizations of the noise process
-        self.current_steps  = 128
-        self.duration_steps = 8
+        self.current_steps  = 256
+        self.duration_steps = 4
         self.N              = self.current_steps*self.duration_steps*self.realizations
-        self.time_points    = 64 # How many points to store as a function of time
+        self.time_points    = 128 # How many points to store as a function of time
 
         # Current state
         self.current_iter      = 0
@@ -293,10 +289,8 @@ class GLPlotWidget(QGLWidget):
         # Move back
         gl.glTranslatef(0.0, 0.0, self.distance)
         gl.glRotatef(-90.0, 1, 0, 0)
-        # gl.glRotatef()
         gl.glRotatef(self.delta_y, 1, 0, 0) 
         gl.glRotatef(self.delta_x, 0, 0, 1)
-        # gl.glRotatef(self.delta_y, 0, 0, 1) 
 
         gl.glEnable(gl.GL_BLEND)
         gl.glEnable(gl.GL_POINT_SMOOTH)
@@ -313,8 +307,6 @@ class GLPlotWidget(QGLWidget):
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         gl.glEnableClientState(gl.GL_COLOR_ARRAY)
 
-        # gl.glDrawArrays(gl.GL_POINTS, 0, self.time_points*4)#self.current_steps*self.duration_steps*self.time_points)
-        
         gl.glMultiDrawArrays(gl.GL_LINE_STRIP, 
                              self.start_indices, self.draw_lengths,
                              self.current_steps*self.duration_steps)
@@ -326,7 +318,6 @@ class GLPlotWidget(QGLWidget):
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
         """
-        # self.update_buffer()
         # update the window size
         self.width, self.height = width, height
         # paint within the whole window
@@ -350,7 +341,7 @@ class GLPlotWidget(QGLWidget):
         dxy = event.posF() - self.last_pos
         dx = dxy.x()
         dy = dxy.y()
-        #    rotate - 
+
         if event.buttons() & QtCore.Qt.LeftButton:
             if event.modifiers() & QtCore.Qt.ControlModifier:
                 pass
@@ -393,22 +384,3 @@ if __name__ == '__main__':
     window = TestWindow()
     window.show()
     app.exec_()
-
-
-# if __name__ == '__main__':
-#     # phase_diagram = amp_dur()
-
-#     min_duration = min_duration*1e9
-#     max_duration = max_duration*1e9
-#     max_current = max_current*1e-8
-#     min_current = min_current*1e-8
-
-#     extent = (min_duration, max_duration, min_current, max_current)
-#     aspect = (max_duration-min_duration)/(max_current-min_current)
-#     plt1 = plt.figure(1)
-#     plt.imshow(phase_diagram, origin='lower', extent=extent, aspect=aspect, cmap=plt.get_cmap('Blues'))
-#     plt.colorbar()
-#     plt1.suptitle('Switching Probability')
-#     plt1.gca().set_xlabel('Pulse Duration (ns)')
-#     plt1.gca().set_ylabel(r'Current Density (10$^8$A/cm$^2$)')
-#     plt.show()

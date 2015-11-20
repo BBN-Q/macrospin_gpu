@@ -39,7 +39,7 @@ def demagCylinder(length, width, height, cgs=False):
         answer = np.array([Nxx, 1.0-Nxx-Nzz, Nzz])
     return answer
     
-def demagEllipsoid(length, width, height):
+def demagEllipsoid(length, width, height, cgs=False):
     '''Returns the demag factors of an ellipsoid'''
     a = 0.5*length # Semimajor
     b = 0.5*width  # Semiminor
@@ -64,10 +64,23 @@ def demagEllipsoid(length, width, height):
     Nyy = (b1*c1)/(c2**3 * d2**2 * d1**2) * (E - d1*d1*F - d2*d2*c2*c1/b1)
     Nzz = (b1*c1)/(c2**3 * d1**2) * (c2*b1/c1 - E)
 
-    return np.array([Nxx, Nyy, Nzz])
+    if cgs:
+        return np.pi*4.0*np.array([Nxx, Nyy, Nzz])
+    else:
+        return np.array([Nxx, Nyy, Nzz])
 
 
 if __name__=='__main__':
 
-    print demagEllipsoid(120,90,2)
-    print demagCylinder(120,90,2)
+    # Some example use cases
+    a = demagCylinder(100,50,1.5)
+    b = demagCylinder(100,50,0.75)
+    c = demagCylinder(80,45,2)
+
+    # These are the IP anisotropies
+    Ms = 1200.0
+    print(4.0*np.pi*Ms*(a[1]-a[0]))
+    print(4.0*np.pi*Ms*(b[1]-b[0]))
+
+    Ms = 640.0
+    print(4.0*np.pi*Ms*(c[1]-c[0]))
