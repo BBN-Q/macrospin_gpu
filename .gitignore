@@ -1,1 +1,2 @@
 *.pyc
+src/macrospin_gpu/templates/rendered-kernel.cl
