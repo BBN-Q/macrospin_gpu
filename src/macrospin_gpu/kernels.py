@@ -9,7 +9,7 @@ import jinja2 as jj
 from   jinja2 import Template
 
 # Physics imports
-from   demag import demagCylinder
+from   macrospin_gpu.demag import demagCylinder
 
 # Built ins
 import os
