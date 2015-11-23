@@ -41,13 +41,10 @@ __kernel void evolve(__global float4 *m,
 
     // Only need to update these parameters once per local work group
     if (get_local_id(0) == 0) {
-
         // Read the array values into local memory
         {{first_loop_var}}  = first_loop_values[get_group_id(0)];
         {{second_loop_var}} = second_loop_values[get_group_id(1)];
-        
         envelope = get_envelope(real_time, pulse_duration);
-        // printf("real_time: %2.2g\t curr: %2.2g\t pulse_duration: %2.2g\t envelope: %2.2f\n", real_time, current_density, pulse_duration, envelope);
     }
     // Ensure thread execution doesn't continue until local variables are set
     barrier(CLK_GLOBAL_MEM_FENCE);
@@ -75,13 +72,9 @@ __kernel void evolve(__global float4 *m,
         {% endfor -%}
     {% endif %}
 
-    // if (get_local_id(0) == 0) {
-    //     printf("stt = %2.2v4hlf\n", stt);
-    // }
-
     // Define torque variables
     float4 hxm, pxm, mxhxm;
-    {% if thermal %}float4 nudWxm, numxdWxm;{% endif %}
+    {% if thermal %}float4 nudWxm, numxdWxm;{% endif -%}
 
     // Deterministic terms (not including deterministic drift)
     hxm      =  cross(heff, m_loc);
@@ -92,12 +85,11 @@ __kernel void evolve(__global float4 *m,
     mxhxm    =  cross(m_loc, hxm);
     {% endif %}
 
-
     {%- if thermal -%}
     // Stochastic terms
     nudWxm   =  nuSqrtDt*cross(dW_loc,m_loc);
     numxdWxm =  cross(m_loc, nudWxm);
-    {% endif %}
+    {% endif -%}
 
     // Assemble the torques and perform integration step
     {% if thermal -%}
