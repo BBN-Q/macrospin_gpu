@@ -25,7 +25,7 @@ class Simulation2D(object):
         kernel_text = self.mo.render_kernel()
 
         self.dirname = os.path.dirname(__file__)
-        with open(self.dirname+'/rendered-kernel.cl', 'w') as f:
+        with open(self.dirname+'/templates/rendered-kernel.cl', 'w') as f:
             f.write(kernel_text)
 
         self.ctx    = cl.create_some_context()
