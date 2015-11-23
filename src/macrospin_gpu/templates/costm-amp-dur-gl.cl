@@ -123,6 +123,6 @@ __kernel void reduce_m(__global float4 *m, __global float *phase_diagram, int re
 	for (int r=0; r<realizations; r++) {
 		sum += m[r + i*realizations].x > 0.0f ? 0.0f : 1.0f;
 	}
-	phase_diagram[i] = sum/float(realizations);
+	phase_diagram[i] = sum/(float)realizations;
 
 }
