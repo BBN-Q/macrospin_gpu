@@ -21,7 +21,7 @@ from   pyopencl.tools import get_gl_sharing_context_properties
 from   jinja2 import Template
 
 # Physics imports
-from   demag import demagCylinder
+from   macrospin_gpu.demag import demagCylinder
 
 # Other imports
 from   tqdm import *
@@ -109,7 +109,7 @@ class GLPlotWidget(QGLWidget):
         """
         
         # Load kernel
-        with open("costm-amp-dur-gl.cl") as template_file:
+        with open("src/macrospin_gpu/templates/costm-amp-dur-gl.cl") as template_file:
             kernel_template = Template(template_file.read())
 
         # Render the CUDA module metaprogram template
@@ -163,7 +163,7 @@ class GLPlotWidget(QGLWidget):
         self.current_steps  = 256
         self.duration_steps = 4
         self.N              = self.current_steps*self.duration_steps*self.realizations
-        self.time_points    = 128 # How many points to store as a function of time
+        self.time_points    = 64 # How many points to store as a function of time
 
         # Current state
         self.current_iter      = 0
