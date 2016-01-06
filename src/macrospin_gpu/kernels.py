@@ -47,6 +47,9 @@ class Macrospin_2DPhaseDiagram(object):
         # Default field
         self.parameters['hext'] = [0,0,0,0]
 
+        self.read_template()
+
+    def read_template(self):
         # Main template
         self.dirname = os.path.dirname(__file__)
         with open(self.dirname+"/templates/kernel_template_2D.cl") as template_file:
@@ -92,7 +95,9 @@ class Macrospin_2DPhaseDiagram(object):
         Nzz            = Nzz - self.Hpma/self.Ms
         self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
 
-    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm, current_density=0.5e8, pulse_duration=1e-9):
+    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm,
+                        current_density=0.5e8, pulse_duration=1e-9,
+                        square_pulse=True, rise_time=60.0e-12, fall_time=110.0e-12):
 
         self.parameters['stt'] = True
         this_torque = {}
@@ -110,9 +115,13 @@ class Macrospin_2DPhaseDiagram(object):
         this_torque['prefac'] = prefactor
         self.spin_torques.append(this_torque)
 
-        self.parameters['stt_torques'] = self.spin_torques
+        self.parameters['square_pulse'] = square_pulse
+        self.parameters['rise_time']    = rise_time
+        self.parameters['fall_time']    = fall_time
+
+        self.parameters['stt_torques']     = self.spin_torques
         self.parameters['current_density'] = current_density
-        self.parameters['pulse_duration'] = pulse_duration
+        self.parameters['pulse_duration']  = pulse_duration
 
     def add_thermal_noise(self, temperature, thermal_realizations=16):
         self.temperature          = temperature
@@ -158,3 +167,36 @@ class Macrospin_2DPhaseDiagram(object):
         template = jj.Template(self.main_template)
         rendered_kernel = template.render(**self.parameters)
         return rendered_kernel
+
+
+class Macrospin_2DPhaseDiagram_Dipolar(Macrospin_2DPhaseDiagram):
+    def read_template(self):
+        # Main template
+        self.dirname = os.path.dirname(__file__)
+        with open(self.dirname+"/templates/kernel_template_2D_dipolar.cl") as template_file:
+            self.main_template = template_file.read()
+
+    def add_reference_layer(self, Ms=1280.0, initial_m=[1,0,0], r=[0,0,10.0e-7], thickness=12.0e-7, Hpma=0.0):
+        if not hasattr(self, 'Ms'):
+            raise Exception("Must set magnetic properties before adding a reference layer")
+        if not hasattr(self, 'length'):
+            raise Exception("Must set geometry before adding a reference layer")
+        self.initial_m_ref = initial_m
+        self.initial_m_ref.append(0)
+        self.Ms_ref = Ms
+        self.Hpma_ref = Hpma
+        self.r_ref = r
+        self.r_ref.append(0)
+        self.vol_ref = self.area*thickness
+        self.thickness_ref = thickness
+        # self.parameters['dipole_prefac_21'] = - self.Ms_ref*self.vol_ref/(np.linalg.norm(r)**3*self.Ms)
+        # self.parameters['dipole_prefac_12'] = - self.vol/(np.linalg.norm(r)**3)
+
+        # print(self.parameters['dipole_prefac_21'])
+        # print(self.parameters['dipole_prefac_12'])
+        # sys.exit()
+
+        Nxx, Nyy, Nzz  = demagCylinder(self.length, self.width, self.thickness_ref, cgs=True)
+        Nzz            = Nzz - self.Hpma_ref/self.Ms_ref
+        self.parameters['demag_tensor_ref'] = [Nxx, Nyy, Nzz, 0.0]
+
