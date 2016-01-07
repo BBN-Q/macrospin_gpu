@@ -44,6 +44,9 @@ class Macrospin_2DPhaseDiagram(object):
         self.temperature          = 0.0
         self.thermal_realizations = 1
 
+        # Store times?
+        self.time_traces = False
+
         # Default field
         self.parameters['hext'] = [0,0,0,0]
 
@@ -64,6 +67,13 @@ class Macrospin_2DPhaseDiagram(object):
 
         self.parameters['initial_pause'] = initial_pause
         self.parameters['dt'] = self.dt
+
+    def store_time_traces(self, interval=10.0e-12):
+        if not hasattr(self, 'real_dt'):
+            raise Exception("Must set evolution properties before setting up time traces.")
+        self.time_traces = True
+        self.m_of_t_update_interval = interval=10.0e-12/self.real_dt
+        self.time_points = self.total_time/self.m_of_t_update_interval
 
     def set_magnetic_properties(self, Ms=640.0, Hpma=0.0, damping=0.05, initial_m=[1,0,0]):
         self.Ms      = Ms

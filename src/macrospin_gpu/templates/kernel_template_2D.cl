@@ -13,6 +13,7 @@ __constant float4 {{fc.name}} = (float4)({{fc.x}}f, {{fc.y}}f, {{fc.z}}f, {{fc.w
 float get_envelope(float real_time, float duration);
 
 float get_envelope(float real_time, float duration) {
+    {% if square_pulse %}
     if (real_time < initial_pause) {
         return 0.0f;
     } else if (real_time < (initial_pause + duration) ) {
@@ -20,6 +21,15 @@ float get_envelope(float real_time, float duration) {
     } else {
         return 0.0f;
     }
+    {% else %}
+    if (real_time < initial_pause) {
+        return exp(-pown(real_time-initial_pause,2)/(2.0f*pown({{rise_time}},2)));
+    } else if (real_time < (initial_pause + duration) ) {
+        return 1.0f;
+    } else {
+        return exp(-pown(real_time-initial_pause-duration,2)/(2.0f*pown({{fall_time}},2)));
+    }
+    {% endif %}
 }
 {% endif %}
 
@@ -124,5 +134,14 @@ __kernel void reduce_m(__global float4 *m, __global float *phase_diagram, int re
         sum += m[r + i*realizations].x > 0.0f ? 0.0f : 1.0f;
     }
     phase_diagram[i] = sum/(float)realizations;
+
+}
+
+__kernel void update_m_of_t(__global float4 *m, __global float4 *m_of_t, int time_points, int realizations, int current_index) {
+  int i = get_group_id(0) + get_group_id(1)*get_global_size(0);
+
+    float4 mloc = m[i*realizations];
+    mloc.w = 1.0f;
+    m_of_t[i*time_points + current_index] = mloc;
 
 }

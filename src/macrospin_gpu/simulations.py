@@ -40,11 +40,17 @@ class Simulation2D(object):
 
         self.normalize_m = self.prg.normalize_m
 
+        self.current_timepoint = 0
+        self.update_m_of_t = self.prg.update_m_of_t
+        self.update_m_of_t.set_scalar_arg_dtypes([None, None, np.int32, np.int32, np.int32])
+
         # Define random number generator
         self.ran_gen = ran.RanluxGenerator(self.queue, luxury=0)
 
         # Declare the GPU bound arrays
         self.m             = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float4)
+        if self.mo.time_traces:
+            self.m_of_t    = cl.array.zeros(self.queue, self.mo.pixels*self.mo.time_points, cl.array.vec.float4)
         self.dW            = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float4)
         self.phase_diagram = cl.array.zeros(self.queue, self.mo.pixels, np.float32)
 
@@ -78,6 +84,17 @@ class Simulation2D(object):
                                  (self.mo.thermal_realizations, 1),
                                  self.m.data).wait()
 
+            # Periodic Normalizations
+            if self.mo.time_traces:
+                if (i%(self.mo.m_of_t_update_interval)==0):
+                    self.update_m_of_t(self.queue,(self.mo.first_val_steps, self.mo.second_val_steps),
+                                                  (1,1),
+                                                  self.m.data, self.m_of_t.data, 
+                                                  self.no.time_points, self.mo.thermal_realizations,
+                                                  self.current_timepoint%self.mo.time_points).wait()
+                    self.current_timepoint += 1
+
+
     def get_phase_diagram(self):
         self.reduce_m(self.queue,
                       (self.mo.first_val_steps, self.mo.second_val_steps),
@@ -85,3 +102,6 @@ class Simulation2D(object):
                       self.m.data, self.phase_diagram.data, self.mo.thermal_realizations).wait()
 
         return self.phase_diagram.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps).transpose()
+
+    def get_time_traces(self):
+        return self.m_of_t.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps, self.mo.time_points).transpose()

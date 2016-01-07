@@ -9,25 +9,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
+    min_duration = 0.001
+    max_duration = 0.5
+    min_current  = 0    
+    max_current  = 2e8
+
     mk = Macrospin_2DPhaseDiagram()
-    mk.set_magnetic_properties(Ms=1200.0, damping=0.05, Hpma=0, initial_m=[1,0,0])
-    mk.set_external_field([0,0,100])
-    mk.set_evolution_properties()
+    mk.set_magnetic_properties(Ms=640.0, damping=0.1, Hpma=000, initial_m=[-1,0,0])
+    mk.set_external_field([0,0,0])
+    mk.set_evolution_properties(dt=1e-12)
     mk.set_geometry(100,50,3)
-    mk.add_spin_torque([0.0,0.0,1.0], 0.2, 1.49)
-    mk.add_spin_torque([-1.0,0.0,0.0], 0.4, 1.49)
-    mk.add_thermal_noise(4.0, 16)
-    mk.define_phase_diagram("current_density", np.linspace(0, 2e8,128),
-                            "pulse_duration",  np.linspace(0.05e-9, 1.0e-9,128))
+    mk.add_spin_torque([0.0,0.0,1.0], 0.16, 1.49)
+    mk.add_spin_torque([-1.0,0.0,0.0], 0.00, 1.49)
+    mk.add_thermal_noise(0.0, 1)
+    mk.define_phase_diagram("current_density", np.linspace(min_current, max_current, 64),
+                            "pulse_duration",  np.linspace(min_duration*1e-9, max_duration*1e-9, 64))
+    mk.store_time_traces()
 
     sim = Simulation2D(mk)
     sim.run()
     phase_diagram = sim.get_phase_diagram()
-
-    min_duration = 0.05
-    max_duration = 1.00
-    min_current  = 0
-    max_current  = 1e8
 
     extent = (min_duration, max_duration, min_current, max_current)
     aspect = (max_duration-min_duration)/(max_current-min_current)
