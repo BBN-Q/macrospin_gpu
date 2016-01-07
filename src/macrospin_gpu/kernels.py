@@ -102,7 +102,9 @@ class Macrospin_2DPhaseDiagram(object):
         Nzz            = Nzz - self.Hpma/self.Ms
         self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
 
-    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm, current_density=0.5e8, pulse_duration=1e-9, square_pulse=True):
+    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm,
+                        current_density=0.5e8, pulse_duration=1e-9,
+                        square_pulse=True, rise_time=60.0e-12, fall_time=110.0e-12):
 
         self.parameters['stt'] = True
         this_torque = {}
