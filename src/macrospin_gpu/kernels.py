@@ -102,7 +102,7 @@ class Macrospin_2DPhaseDiagram(object):
         Nzz            = Nzz - self.Hpma/self.Ms
         self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
 
-    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm, current_density=0.5e8, pulse_duration=1e-9):
+    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm, current_density=0.5e8, pulse_duration=1e-9, square_pulse=True):
 
         self.parameters['stt'] = True
         this_torque = {}
@@ -120,9 +120,13 @@ class Macrospin_2DPhaseDiagram(object):
         this_torque['prefac'] = prefactor
         self.spin_torques.append(this_torque)
 
-        self.parameters['stt_torques'] = self.spin_torques
+        self.parameters['square_pulse'] = square_pulse
+        self.parameters['rise_time']    = rise_time
+        self.parameters['fall_time']    = fall_time
+
+        self.parameters['stt_torques']     = self.spin_torques
         self.parameters['current_density'] = current_density
-        self.parameters['pulse_duration'] = pulse_duration
+        self.parameters['pulse_duration']  = pulse_duration
 
     def add_thermal_noise(self, temperature, thermal_realizations=16):
         self.temperature          = temperature
