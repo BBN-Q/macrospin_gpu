@@ -90,7 +90,7 @@ class Simulation2D(object):
                     self.update_m_of_t(self.queue,(self.mo.first_val_steps, self.mo.second_val_steps),
                                                   (1,1),
                                                   self.m.data, self.m_of_t.data, 
-                                                  self.no.time_points, self.mo.thermal_realizations,
+                                                  self.mo.time_points, self.mo.thermal_realizations,
                                                   self.current_timepoint%self.mo.time_points).wait()
                     self.current_timepoint += 1
 
@@ -104,4 +104,4 @@ class Simulation2D(object):
         return self.phase_diagram.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps).transpose()
 
     def get_time_traces(self):
-        return self.m_of_t.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps, self.mo.time_points).transpose()
+        return self.m_of_t.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps, self.mo.time_points)

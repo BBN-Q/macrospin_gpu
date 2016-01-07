@@ -72,8 +72,8 @@ class Macrospin_2DPhaseDiagram(object):
         if not hasattr(self, 'real_dt'):
             raise Exception("Must set evolution properties before setting up time traces.")
         self.time_traces = True
-        self.m_of_t_update_interval = interval=10.0e-12/self.real_dt
-        self.time_points = self.total_time/self.m_of_t_update_interval
+        self.m_of_t_update_interval = int(interval/self.real_dt)
+        self.time_points = int(self.total_time/interval)
 
     def set_magnetic_properties(self, Ms=640.0, Hpma=0.0, damping=0.05, initial_m=[1,0,0]):
         self.Ms      = Ms

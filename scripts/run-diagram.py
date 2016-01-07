@@ -24,7 +24,7 @@ if __name__ == '__main__':
     mk.add_thermal_noise(0.0, 1)
     mk.define_phase_diagram("current_density", np.linspace(min_current, max_current, 64),
                             "pulse_duration",  np.linspace(min_duration*1e-9, max_duration*1e-9, 64))
-    mk.store_time_traces()
+    mk.store_time_traces(interval=5e-12)
 
     sim = Simulation2D(mk)
     sim.run()
@@ -40,4 +40,12 @@ if __name__ == '__main__':
     plt1.suptitle('Switching Probability')
     plt1.gca().set_xlabel('Pulse Duration (ns)')
     plt1.gca().set_ylabel(r'Current Density (10$^8$A/cm$^2$)')
+
+    plt2 = plt.figure(2)
+    time_data = sim.get_time_traces()
+    ni, nj, n_blah = time_data.shape
+    for i in range(0,ni,4):
+        for j in range(0,nj,4):
+            plt.plot(time_data[i,j,:]['x'])
     plt.show()
+
