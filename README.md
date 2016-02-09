@@ -14,18 +14,16 @@ Until this is a proper package add the `src` folder to your python path.
 
 # Installation
 
-## OpenCL
-
-### OS X
+## OS X
 Installed out of the box on Windows.
 
-### Windows
-Use the Anacondon python distribution
+## Windows
+Use the Anaconda python distribution
 
-### Linux
+## Linux
+
+### Intel CPU OpenCL libraries
 Tested on Linux Mint 17.2
-
-#### Intel CPU OpenCL libraries
 
 Mostly following the instructions from [this Intel forum
 post](https://software.intel.com/en-us/forums/opencl/topic/390630#comment-1832283)
@@ -71,8 +69,26 @@ Ubuntu 12.04 and fail. Extract and move into the folder
     ```shell
     sudo ln /opt/intel/opencl-1.2-5.0.0.43/etc/intel64.icd /etc/OpenCL/vendors/intel64.icd
     ```
+### Nvidia Drivers with Prime
+Tested on Linux Mint 17.3 with nvidia 352.63 drivers.  Have installed
+`nvidia-352,``nvidia-opencl-icd-352`, `nvida-settings`, `nvidia-prime`,
+`opencl-headers`. Need to have Nvidia card powered up using Prime. Then need to
+initialize nvida_uvm kernel module by running something as root. E.g.
 
-#### Build and install PyOpenCL
+```shell
+~/Downloads $ curl https://codeload.github.com/hpc12/tools/tar.gz/master | tar xvfz -
+~/Downloads $ cd tools-master
+/tools-master $ make
+/tools-master $ sudo ./print_devices
+```
+
+Now you'll be able to run OpenCL programs without root.  This might be related
+to `nvidia-352-modprobe` not being available for Ubuntu 14.04. I tried manually
+installing `nvidia-modprobe` from
+ftp://download.nvidia.com/XFree86/nvidia-modprobe/ and it didn't help.
+
+
+### Build and install PyOpenCL
 There is an [open issue](https://github.com/pyopencl/pyopencl/issues/81) with recent versions of PyOpenCL and gcc 4.8/4.9. Work around by checking out `v2015.1`.
 
     ```shell
