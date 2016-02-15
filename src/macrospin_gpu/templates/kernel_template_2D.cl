@@ -83,16 +83,16 @@ __kernel void evolve(__global float4 *m,
     {% endif %}
 
     // Define torque variables
-    float4 hxm, pxm, mxhxm;
+    float4 mxh, mxp, mxmxh;
     {% if thermal %}float4 nudWxm, numxdWxm;{% endif -%}
 
     // Deterministic terms (not including deterministic drift)
-    hxm      =  cross(heff, m_loc);
+    mxh      =  cross(m_loc, heff);
     {% if stt -%}
-    pxm      =  cross(stt,  m_loc);
-    mxhxm    =  cross(m_loc, hxm + pxm);
+    mxp      =  cross(m_loc, stt);
+    mxmxh    =  cross(m_loc, mxh - mxp ); 
     {% else -%}
-    mxhxm    =  cross(m_loc, hxm);
+    mxmxh    =  cross(m_loc, mxh);
     {% endif %}
 
     {%- if thermal -%}
@@ -103,7 +103,7 @@ __kernel void evolve(__global float4 *m,
 
     // Assemble the torques and perform integration step
     {% if thermal -%}
-    float4 deterministic_part = hxm + fma(alpha, mxhxm, -nu2*m_loc);
+    float4 deterministic_part = - mxh - fma(alpha, mxmxh, +nu2*m_loc);
     float4 stochastic_part    = fma(alpha, numxdWxm, nudWxm); 
     m[i] = m_loc + dt*deterministic_part + stochastic_part;
     {% else %}
@@ -116,7 +116,7 @@ __kernel void normalize_m(__global float4 *m) {
   int i = get_global_id(1)*get_global_size(0) + get_global_id(0);
 
   float4 mloc = m[i];
-  m[i] = rsqrt(dot(mloc,mloc))*mloc;
+  m[i] = normalize(m[i]);
 }
 
 __kernel void reduce_m(__global float4 *m, __global float *phase_diagram, int realizations) {

@@ -58,7 +58,7 @@ class Macrospin_2DPhaseDiagram(object):
     def set_evolution_properties(self, dt=1e-13, initial_pause=0.2e-9, total_time=1.4e-9, normalize_interval=50):
         if not hasattr(self, 'Ms'):
             raise Exception("Must set magnetic properties before evolution properties")
-        timeUnit     = 1.0/(gamma*self.Ms)    # Reduced units for numerical convnience
+        timeUnit     = (1.0+self.damping**2)/(gamma*self.Ms)    # Reduced units for numerical convnience
         self.real_dt = dt                     # Actual time step (s)
         self.dt      = dt/timeUnit            # time in units of $\gamma M_s$
         self.total_time         = total_time
@@ -110,7 +110,7 @@ class Macrospin_2DPhaseDiagram(object):
         this_torque = {}
 
         prefactor = 0.1*2.0*(lambda_asymm**2)*pol_strength*hbar # 0.1 for Amps->abAmps
-        prefactor = prefactor/(2.0*ech*self.Ms*self.Ms*self.thickness*self.damping) 
+        prefactor = prefactor*(1.0-self.damping)/(2.0*ech*self.Ms*self.Ms*self.thickness*self.damping) 
 
         assert len(pol_vector) == 3
 
