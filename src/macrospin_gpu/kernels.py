@@ -98,6 +98,9 @@ class Macrospin_2DPhaseDiagram(object):
         self.area      = np.pi*self.length*self.width/4.0
         self.vol       = self.area*self.thickness
 
+        if not hasattr(self, 'Hpma'):
+            raise Exception("Must set magnetic properties before defining geometry.")
+
         Nxx, Nyy, Nzz  = demagCylinder(length, width, thickness, cgs=True)
         Nzz            = Nzz - self.Hpma/self.Ms
         self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
