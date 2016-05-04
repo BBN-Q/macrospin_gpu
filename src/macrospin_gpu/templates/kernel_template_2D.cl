@@ -82,6 +82,12 @@ __kernel void evolve(__global float4 *m,
         {% endfor -%}
     {% endif %}
 
+    // Add Oersted Field
+    {% if oersted -%}
+    float4 h_oe = current_density*{{h_oe_prefac}}f*(float4)({{h_oe_x}}f, {{h_oe_y}}f, {{h_oe_z}}f, 0.0f);
+    heff = heff+ h_oe;
+    {% endif %}
+
     // Define torque variables
     float4 mxh, mxp, mxmxh;
     {% if thermal %}float4 nudWxm, numxdWxm;{% endif -%}

@@ -130,6 +130,15 @@ class Macrospin_2DPhaseDiagram(object):
         self.parameters['current_density'] = current_density
         self.parameters['pulse_duration']  = pulse_duration
 
+    def enable_oersted_field(self, field_direction=[1,0,0]):
+        if not hasattr(self, 'thickness'):
+            raise Exception("Must set geometry before enabling oersted field.")
+        self.parameters['oersted'] = True
+        self.parameters['h_oe_prefac'] = self.thickness*0.5/self.Ms
+        self.parameters['h_oe_x']  = float(field_direction[0])
+        self.parameters['h_oe_y']  = float(field_direction[1])
+        self.parameters['h_oe_z']  = float(field_direction[2])
+
     def add_thermal_noise(self, temperature, thermal_realizations=16):
         self.temperature          = temperature
         self.thermal_realizations = thermal_realizations
