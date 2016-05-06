@@ -52,7 +52,7 @@ class Macrospin_2DPhaseDiagram(object):
 
         # Main template
         self.dirname = os.path.dirname(__file__)
-        with open(self.dirname+"/templates/kernel_template_2D.cl") as template_file:
+        with open(self.dirname+"/templates/kernel_template_heun_2D.cl") as template_file:
             self.main_template = template_file.read()
 
     def set_evolution_properties(self, dt=1e-13, initial_pause=0.2e-9, total_time=1.4e-9, normalize_interval=50):
@@ -67,6 +67,7 @@ class Macrospin_2DPhaseDiagram(object):
 
         self.parameters['initial_pause'] = initial_pause
         self.parameters['dt'] = self.dt
+        self.parameters['real_dt'] = self.real_dt
 
     def store_time_traces(self, interval=10.0e-12):
         if not hasattr(self, 'real_dt'):

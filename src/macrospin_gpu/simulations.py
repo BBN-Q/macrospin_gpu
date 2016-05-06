@@ -33,7 +33,12 @@ class Simulation2D(object):
         self.prg    = cl.Program(self.ctx, kernel_text).build()
         
         self.evolve = self.prg.evolve
-        self.evolve.set_scalar_arg_dtypes([None, None, None, None, np.float32])
+        
+        if self.mo.temperature > 0:
+            self.evolve.set_scalar_arg_dtypes([None, None, None, None, np.float32])
+        else:
+            print("No temp")
+            self.evolve.set_scalar_arg_dtypes([None, None, None, np.float32])
 
         self.reduce_m = self.prg.reduce_m
         self.reduce_m.set_scalar_arg_dtypes([None, None, np.int32])
@@ -71,11 +76,17 @@ class Simulation2D(object):
             if self.mo.temperature > 0:
                 self.ran_gen.fill_normal(self.dW)
 
-            # Run a single LLG evolution step
-            self.evolve(self.queue,
-                        (self.mo.first_val_steps*self.mo.thermal_realizations, self.mo.second_val_steps),
-                        (self.mo.thermal_realizations, 1),
-                        self.m.data, self.dW.data, self.first_vals, self.second_vals, t).wait()
+                # Run a single LLG evolution step
+                self.evolve(self.queue,
+                            (self.mo.first_val_steps*self.mo.thermal_realizations, self.mo.second_val_steps),
+                            (self.mo.thermal_realizations, 1),
+                            self.m.data, self.dW.data, self.first_vals, self.second_vals, t).wait()
+            else:
+                # Run a single LLG evolution step
+                self.evolve(self.queue,
+                            (self.mo.first_val_steps*self.mo.thermal_realizations, self.mo.second_val_steps),
+                            (self.mo.thermal_realizations, 1),
+                            self.m.data, self.first_vals, self.second_vals, t).wait()
 
             # Periodic Normalizations
             if (i%(self.mo.normalize_interval)==0):
