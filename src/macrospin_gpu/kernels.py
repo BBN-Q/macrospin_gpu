@@ -28,7 +28,7 @@ class Macrospin_2DPhaseDiagram(object):
     """Wrapper object for macrospin OpenCL kernel"""
     def __init__(self):
         super(Macrospin_2DPhaseDiagram, self).__init__()
-        
+
         # Dict that passes all parameters to the kernel template
         self.parameters = {}
 
@@ -114,7 +114,7 @@ class Macrospin_2DPhaseDiagram(object):
         this_torque = {}
 
         prefactor = 0.1*2.0*(lambda_asymm**2)*pol_strength*hbar # 0.1 for Amps->abAmps
-        prefactor = prefactor*(1.0-self.damping)/(2.0*ech*self.Ms*self.Ms*self.thickness*self.damping) 
+        prefactor = prefactor*(1.0-self.damping)/(2.0*ech*self.Ms*self.Ms*self.thickness*self.damping)
 
         assert len(pol_vector) == 3
 
@@ -148,8 +148,8 @@ class Macrospin_2DPhaseDiagram(object):
         self.thermal_realizations = thermal_realizations
 
         # Width of thermal distribution
-        self.nu = np.sqrt(2.0*self.damping*kB*self.temperature/(self.vol*self.Ms**2)) 
-        self.parameters['thermal']  = True
+        self.nu = np.sqrt(2.0*self.damping*kB*self.temperature/(self.vol*self.Ms**2))
+        self.parameters['thermal']  = self.temperature > 0
         self.parameters['nuSqrtDt'] = self.nu*np.sqrt(self.dt)
         self.parameters['nu']       = self.nu
         self.parameters['nu2']      = self.nu**2

@@ -44,10 +44,10 @@ __kernel void evolve(__global float4 *m,
 
     float4 m_loc  = m[i];
     {%- if thermal -%}float4 dW_loc = dW[i];{% endif %}
-    
+
     __local float {{first_loop_var}};
     __local float {{second_loop_var}};
-    __local float envelope; 
+    __local float envelope;
 
     // Only need to update these parameters once per local work group
     if (get_local_id(0) == 0) {
@@ -59,7 +59,7 @@ __kernel void evolve(__global float4 *m,
     // Ensure thread execution doesn't continue until local variables are set
     barrier(CLK_GLOBAL_MEM_FENCE);
 
-    // Effective field 
+    // Effective field
     float4 heff = hext;
 
     // Subtract the demag field
@@ -96,7 +96,7 @@ __kernel void evolve(__global float4 *m,
     mxh      =  cross(m_loc, heff);
     {% if stt -%}
     mxp      =  cross(m_loc, stt);
-    mxmxh    =  cross(m_loc, mxh - mxp ); 
+    mxmxh    =  cross(m_loc, mxh - mxp );
     {% else -%}
     mxmxh    =  cross(m_loc, mxh);
     {% endif %}
@@ -110,10 +110,10 @@ __kernel void evolve(__global float4 *m,
     // Assemble the torques and perform integration step
     {% if thermal -%}
     float4 deterministic_part = - mxh - fma(alpha, mxmxh, +nu2*m_loc);
-    float4 stochastic_part    = fma(alpha, numxdWxm, nudWxm); 
+    float4 stochastic_part    = fma(alpha, numxdWxm, nudWxm);
     m[i] = m_loc + dt*deterministic_part + stochastic_part;
     {% else %}
-    m[i] = m_loc + dt*fma(alpha, mxhxm, hxm);
+    m[i] = m_loc + dt*fma(alpha, mxmxh, mxh);
     {% endif %}
 }
 
