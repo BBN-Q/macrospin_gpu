@@ -10,8 +10,6 @@ __constant float4 {{fc.name}} = (float4)({{fc.x}}f, {{fc.y}}f, {{fc.z}}f, {{fc.w
 {% endfor %}
 
 {%- if stt %}
-float get_envelope(float real_time, float duration);
-
 float get_envelope(float real_time, float duration) {
     {% if square_pulse %}
     if (real_time < initial_pause) {
