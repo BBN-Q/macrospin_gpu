@@ -113,7 +113,7 @@ __kernel void evolve(__global float4 *m,
     float4 stochastic_part    = fma(alpha, numxdWxm, nudWxm);
     m[i] = m_loc + dt*deterministic_part + stochastic_part;
     {% else %}
-    m[i] = m_loc + dt*fma(alpha, mxmxh, mxh);
+    m[i] = m_loc - dt*fma(alpha, mxmxh, mxh);
     {% endif %}
 }
 

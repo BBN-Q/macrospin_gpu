@@ -94,7 +94,7 @@ float4 eval_torques(float4 m,
     float4 stochastic_part    =  fma(alpha, numxdWxm, nudWxm);
     return dt*deterministic_part + stochastic_part;
     {% else %}
-    return dt*fma(alpha, mxmxh, mxh);
+    return -dt*fma(alpha, mxmxh, mxh);
     {% endif %}
 
 }
@@ -126,7 +126,7 @@ __kernel void evolve(__global float4 *m,
     // Ensure thread execution doesn't continue until local variables are set
     barrier(CLK_GLOBAL_MEM_FENCE);
 
-    // The Heun scheme of integrated is given as follows
+    // The Heun integration scheme is given as follows
     // m_(t+dt) = m_n + 1/2 [ determ(m_bar, t+dt) + determ(m, t) ]*dt
     //                + 1/2 [ stoch(m_bar, t+dt)  + stoch(m, t)  ]*dW
     // m_bar    = m_n + determ(m_n, t)*dt + stoch(m_n, t)*dW
