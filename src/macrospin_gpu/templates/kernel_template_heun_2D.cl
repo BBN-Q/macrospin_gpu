@@ -10,8 +10,6 @@ __constant float4 {{fc.name}} = (float4)({{fc.x}}f, {{fc.y}}f, {{fc.z}}f, {{fc.w
 {% endfor %}
 
 {%- if stt %}
-float get_envelope(float real_time, float duration);
-
 float get_envelope(float real_time, float duration) {
     {% if square_pulse %}
     if (real_time < initial_pause) {
@@ -113,15 +111,17 @@ __kernel void evolve(__global float4 *m,
 
     __local float {{first_loop_var}};
     __local float {{second_loop_var}};
-    __local float envelope, envelope_end;
+    __local float envelope, envelope_end = 0.0;
 
     // Only need to update these parameters once per local work group
     if (get_local_id(0) == 0) {
         // Read the array values into local memory
         {{first_loop_var}}  = first_loop_values[get_group_id(0)];
         {{second_loop_var}} = second_loop_values[get_group_id(1)];
+        {% if stt %}
         envelope     = get_envelope(real_time, pulse_duration);
         envelope_end = get_envelope(real_time + real_dt, pulse_duration);
+        {% endif %}
     }
     // Ensure thread execution doesn't continue until local variables are set
     barrier(CLK_GLOBAL_MEM_FENCE);
