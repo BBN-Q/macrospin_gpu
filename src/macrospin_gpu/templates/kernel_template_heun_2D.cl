@@ -34,12 +34,12 @@ float get_envelope(float real_time, float duration) {
 {% endif %}
 
 float4 eval_torques(float4 m,
-                    {%- if thermal -%}float4 dW,{% endif %} 
+                    {%- if thermal -%}float4 dW,{% endif %}
                     float {{first_loop_var}},
                     float {{second_loop_var}},
                     float envelope) {
 
-    // Effective field 
+    // Effective field
     float4 heff = hext;
 
     // Subtract the demag field
@@ -76,7 +76,7 @@ float4 eval_torques(float4 m,
     mxh      =  cross(m, heff);
     {% if stt -%}
     mxp      =  cross(m, stt);
-    mxmxh    =  cross(m, mxh - mxp ); 
+    mxmxh    =  cross(m, mxh - mxp );
     {% else -%}
     mxmxh    =  cross(m, mxh);
     {% endif %}
@@ -91,12 +91,11 @@ float4 eval_torques(float4 m,
     {% if thermal -%}
     // In the Stratanovich sense, i.e. no deterministic drift term
     float4 deterministic_part = -fma(alpha, mxmxh, mxh);
-    float4 stochastic_part    =  fma(alpha, numxdWxm, nudWxm); 
+    float4 stochastic_part    =  fma(alpha, numxdWxm, nudWxm);
     return dt*deterministic_part + stochastic_part;
     {% else %}
-    return dt*fma(alpha, mxhxm, hxm);
+    return -dt*fma(alpha, mxmxh, mxh);
     {% endif %}
-
 
 }
 
@@ -108,13 +107,13 @@ __kernel void evolve(__global float4 *m,
 
     // Get the global index of the current thread
     int i = get_global_id(1)*get_global_size(0) + get_global_id(0);
-    
+
     float4 m_loc  = m[i];
-    float4 dW_loc = dW[i];
+    {%- if thermal -%}float4 dW_loc = dW[i];{% endif %}
 
     __local float {{first_loop_var}};
     __local float {{second_loop_var}};
-    __local float envelope, envelope_end; 
+    __local float envelope, envelope_end;
 
     // Only need to update these parameters once per local work group
     if (get_local_id(0) == 0) {
@@ -127,19 +126,19 @@ __kernel void evolve(__global float4 *m,
     // Ensure thread execution doesn't continue until local variables are set
     barrier(CLK_GLOBAL_MEM_FENCE);
 
-    // The Heun scheme of integrated is given as follows
+    // The Heun integration scheme is given as follows
     // m_(t+dt) = m_n + 1/2 [ determ(m_bar, t+dt) + determ(m, t) ]*dt
     //                + 1/2 [ stoch(m_bar, t+dt)  + stoch(m, t)  ]*dW
     // m_bar    = m_n + determ(m_n, t)*dt + stoch(m_n, t)*dW
-    
+
     // m_bar = m + eval_torques(m)
     float4 torque_pred = eval_torques(m_loc,
-                        {%- if thermal -%}dW_loc,{% endif %} 
+                        {%- if thermal -%}dW_loc,{% endif %}
                         {{first_loop_var}},
                         {{second_loop_var}},
                         envelope);
     float4 torque_corr = eval_torques(m_loc + torque_pred,
-                        {%- if thermal -%}dW_loc,{% endif %} 
+                        {%- if thermal -%}dW_loc,{% endif %}
                         {{first_loop_var}},
                         {{second_loop_var}},
                         envelope_end);

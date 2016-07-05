@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     min_duration = 0.001
     max_duration = 0.5
-    min_current  = 0    
+    min_current  = 0
     max_current  = 2e8
 
     mk = Macrospin_2DPhaseDiagram()
@@ -48,4 +48,3 @@ if __name__ == '__main__':
         for j in range(0,nj,4):
             plt.plot(time_data[i,j,:]['x'])
     plt.show()
-

@@ -69,6 +69,7 @@ Ubuntu 12.04 and fail. Extract and move into the folder
     ```shell
     sudo ln /opt/intel/opencl-1.2-5.0.0.43/etc/intel64.icd /etc/OpenCL/vendors/intel64.icd
     ```
+    
 ### Nvidia Drivers with Prime
 Tested on Linux Mint 17.3 with nvidia 352.63 drivers.  Have installed
 `nvidia-352,``nvidia-opencl-icd-352`, `nvida-settings`, `nvidia-prime`,
