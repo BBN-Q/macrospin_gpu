@@ -111,7 +111,7 @@ __kernel void evolve(__global float4 *m,
 
     __local float {{first_loop_var}};
     __local float {{second_loop_var}};
-    __local float envelope, envelope_end = 0.0;
+    __local float envelope, envelope_end;
 
     // Only need to update these parameters once per local work group
     if (get_local_id(0) == 0) {
