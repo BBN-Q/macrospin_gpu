@@ -5,9 +5,6 @@ __constant float {{fc.name}} = {{fc.value}}f;
 {% for fc in float3_constants -%}
 __constant float3 {{fc.name}} = (float3)({{fc.x}}f, {{fc.y}}f, {{fc.z}}f);
 {% endfor %}
-{% for fc in float4_constants -%}
-__constant float4 {{fc.name}} = (float4)({{fc.x}}f, {{fc.y}}f, {{fc.z}}f, {{fc.w}}f);
-{% endfor %}
 
 {%- if stt %}
 float get_envelope(float real_time, float duration) {
@@ -31,14 +28,14 @@ float get_envelope(float real_time, float duration) {
 }
 {% endif %}
 
-float4 eval_torques(float4 m,
-                    {%- if thermal -%}float4 dW,{% endif %}
+float3 eval_torques(float3 m,
+                    {%- if thermal -%} float3 dW,{% endif %}
                     float {{first_loop_var}},
                     float {{second_loop_var}},
                     float envelope) {
 
     // Effective field
-    float4 heff = hext;
+    float3 heff = hext;
 
     // Subtract the demag field
     heff = heff - m*demag_tensor;
@@ -50,11 +47,11 @@ float4 eval_torques(float4 m,
 
     // Any non-conservative torques added here
     {% if stt -%}
-    float4 stt = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-    float4 p;
+    float3 stt = (float3)(0.0f, 0.0f, 0.0f);
+    float3 p;
     float m_dot_p;
         {% for t in stt_torques %}
-    p = (float4)({{t.pol_x}}f, {{t.pol_y}}f, {{t.pol_z}}f, 0.0f);
+    p = (float3)({{t.pol_x}}f, {{t.pol_y}}f, {{t.pol_z}}f);
     m_dot_p = dot(p, m);
     stt = stt + p*{{t.prefac}}f*current_density*envelope/fma({{t.l2_m1}}f, m_dot_p, {{t.l2_p1}}f);
         {% endfor -%}
@@ -62,13 +59,13 @@ float4 eval_torques(float4 m,
 
     // Add Oersted Field
     {% if oersted -%}
-    float4 h_oe = current_density*{{h_oe_prefac}}f*(float4)({{h_oe_x}}f, {{h_oe_y}}f, {{h_oe_z}}f, 0.0f);
+    float3 h_oe = current_density*{{h_oe_prefac}}f*(float3)({{h_oe_x}}f, {{h_oe_y}}f, {{h_oe_z}}f);
     heff = heff+ h_oe;
     {% endif %}
 
     // Define torque variables
-    float4 mxh, mxp, mxmxh;
-    {% if thermal %}float4 nudWxm, numxdWxm;{% endif -%}
+    float3 mxh, mxp, mxmxh;
+    {% if thermal %}float3 nudWxm, numxdWxm;{% endif -%}
 
     // Deterministic terms (not including deterministic drift)
     mxh      =  cross(m, heff);
@@ -88,8 +85,8 @@ float4 eval_torques(float4 m,
     // Assemble the torques and perform integration step
     {% if thermal -%}
     // In the Stratanovich sense, i.e. no deterministic drift term
-    float4 deterministic_part = -fma(alpha, mxmxh, mxh);
-    float4 stochastic_part    =  fma(alpha, numxdWxm, nudWxm);
+    float3 deterministic_part = -fma(alpha, mxmxh, mxh);
+    float3 stochastic_part    =  fma(alpha, numxdWxm, nudWxm);
     return dt*deterministic_part + stochastic_part;
     {% else %}
     return -dt*fma(alpha, mxmxh, mxh);
@@ -97,8 +94,8 @@ float4 eval_torques(float4 m,
 
 }
 
-__kernel void evolve(__global float4 *m,
-                     {%- if thermal -%}__global float4 *dW,{% endif %}
+__kernel void evolve(__global float3 *m,
+                     {%- if thermal -%}__global float3 *dW,{% endif %}
                      __global float *first_loop_values,
                      __global float *second_loop_values,
                      float real_time) {
@@ -106,8 +103,8 @@ __kernel void evolve(__global float4 *m,
     // Get the global index of the current thread
     int i = get_global_id(1)*get_global_size(0) + get_global_id(0);
 
-    float4 m_loc  = m[i];
-    {%- if thermal -%}float4 dW_loc = dW[i];{% endif %}
+    float3 m_loc  = m[i];
+    {%- if thermal -%}float3 dW_loc = dW[i];{% endif %}
 
     __local float {{first_loop_var}};
     __local float {{second_loop_var}};
@@ -132,12 +129,12 @@ __kernel void evolve(__global float4 *m,
     // m_bar    = m_n + determ(m_n, t)*dt + stoch(m_n, t)*dW
 
     // m_bar = m + eval_torques(m)
-    float4 torque_pred = eval_torques(m_loc,
+    float3 torque_pred = eval_torques(m_loc,
                         {%- if thermal -%}dW_loc,{% endif %}
                         {{first_loop_var}},
                         {{second_loop_var}},
                         envelope);
-    float4 torque_corr = eval_torques(m_loc + torque_pred,
+    float3 torque_corr = eval_torques(m_loc + torque_pred,
                         {%- if thermal -%}dW_loc,{% endif %}
                         {{first_loop_var}},
                         {{second_loop_var}},
@@ -147,13 +144,13 @@ __kernel void evolve(__global float4 *m,
 
 }
 
-__kernel void normalize_m(__global float4 *m) {
+__kernel void normalize_m(__global float3 *m) {
   //const int i = blockIdx.x*blockDim.x + threadIdx.x;
   int i = get_global_id(1)*get_global_size(0) + get_global_id(0);
   m[i] = normalize(m[i]);
 }
 
-__kernel void reduce_m(__global float4 *m, __global float *phase_diagram, int realizations) {
+__kernel void reduce_m(__global float3 *m, __global float *phase_diagram, int realizations) {
     // In this case get_global_size(0) = total number of duration steps
     //              get_group_id(0) = duration duration step
     //              get_global_size(1) = total number of tilt steps
@@ -171,11 +168,10 @@ __kernel void reduce_m(__global float4 *m, __global float *phase_diagram, int re
 
 }
 
-__kernel void update_m_of_t(__global float4 *m, __global float4 *m_of_t, int time_points, int realizations, int current_index) {
-  int i = get_group_id(0) + get_group_id(1)*get_global_size(0);
+__kernel void update_m_of_t(__global float3 *m, __global float3 *m_of_t, int time_points, int realizations, int current_index) {
+    int i = get_group_id(0) + get_group_id(1)*get_global_size(0);
 
-    float4 mloc = m[i*realizations];
-    mloc.w = 1.0f;
+    float3 mloc = m[i*realizations];
     m_of_t[i*time_points + current_index] = mloc;
 
 }
