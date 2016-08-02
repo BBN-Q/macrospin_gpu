@@ -31,9 +31,9 @@ class Simulation2D(object):
         self.ctx    = cl.create_some_context()
         self.queue  = cl.CommandQueue(self.ctx)
         self.prg    = cl.Program(self.ctx, kernel_text).build()
-
+        
         self.evolve = self.prg.evolve
-
+        
         if self.mo.temperature > 0:
             self.evolve.set_scalar_arg_dtypes([None, None, None, None, np.float32])
         else:
@@ -53,14 +53,14 @@ class Simulation2D(object):
         self.ran_gen = ran.RanluxGenerator(self.queue, luxury=0)
 
         # Declare the GPU bound arrays
-        self.m             = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float3)
+        self.m             = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float4)
         if self.mo.time_traces:
-            self.m_of_t    = cl.array.zeros(self.queue, self.mo.pixels*self.mo.time_points, cl.array.vec.float3)
-        self.dW            = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float3)
+            self.m_of_t    = cl.array.zeros(self.queue, self.mo.pixels*self.mo.time_points, cl.array.vec.float4)
+        self.dW            = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float4)
         self.phase_diagram = cl.array.zeros(self.queue, self.mo.pixels, np.float32)
 
         # Fill out the magnetization initial conditions and push to card
-        self.initial_m = np.zeros(self.mo.N, dtype=cl.array.vec.float3)
+        self.initial_m = np.zeros(self.mo.N, dtype=cl.array.vec.float4)
         self.initial_m[:] = tuple(self.mo.initial_m)
         cl.enqueue_copy(self.queue, self.m.data, self.initial_m)
 
@@ -100,7 +100,7 @@ class Simulation2D(object):
                 if (i%(self.mo.m_of_t_update_interval)==0):
                     self.update_m_of_t(self.queue,(self.mo.first_val_steps, self.mo.second_val_steps),
                                                   (1,1),
-                                                  self.m.data, self.m_of_t.data,
+                                                  self.m.data, self.m_of_t.data, 
                                                   self.mo.time_points, self.mo.thermal_realizations,
                                                   self.current_timepoint%self.mo.time_points).wait()
                     self.current_timepoint += 1

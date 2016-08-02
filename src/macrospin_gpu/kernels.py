@@ -48,7 +48,7 @@ class Macrospin_2DPhaseDiagram(object):
         self.time_traces = False
 
         # Default field
-        self.parameters['hext'] = [0,0,0]
+        self.parameters['hext'] = [0,0,0,0]
 
         # Main template
         self.dirname = os.path.dirname(__file__)
@@ -88,6 +88,7 @@ class Macrospin_2DPhaseDiagram(object):
 
     def set_external_field(self, h):
         assert len(h) == 3
+        h.append(0)
         self.parameters['hext'] = [hi/self.Ms for hi in h]
 
     def set_geometry(self, length, width, thickness):
@@ -103,7 +104,7 @@ class Macrospin_2DPhaseDiagram(object):
 
         Nxx, Nyy, Nzz  = demagCylinder(length, width, thickness, cgs=True)
         Nzz            = Nzz - self.Hpma/self.Ms
-        self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz]
+        self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
 
     def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm,
                         current_density=0.5e8, pulse_duration=1e-9,
