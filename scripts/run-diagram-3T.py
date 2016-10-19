@@ -10,21 +10,22 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     min_duration = 0.001
-    max_duration = 3.0
+    max_duration = 10.0
     min_current  = 0    
     max_current  = 4.5e8
 
     mk = Macrospin_2DPhaseDiagram()
     mk.set_magnetic_properties(Ms=1200.0, damping=0.015, Hpma=10000, initial_m=[1,0,0])
-    mk.set_external_field([2.0,5.0,3.0])
-    mk.set_evolution_properties(dt=5e-13, total_time=max_duration*1.2e-9, normalize_interval=50)
-    mk.set_geometry(170,75,1.3)
+    mk.set_external_field([100.0,5.0,3.0])
+    mk.set_evolution_properties(dt=5e-13, total_time=10*3.0e-9, normalize_interval=50)
+    mk.set_geometry(180,75,1.3)
     # mk.add_spin_torque([0.0,0.0,1.0], 0.2, 1.49)
     mk.add_spin_torque([1.0,0.0,0.0], 0.1, 1.0)
     # mk.enable_oersted_field(field_direction=[-1,0,0])
-    mk.add_thermal_noise(4, 32)
-    mk.define_phase_diagram("current_density", np.linspace(min_current, max_current, 128),
-                            "pulse_duration",  np.linspace(min_duration*1e-9, max_duration*1e-9, 128))
+    mk.add_thermal_noise(4, 8)
+    mk.add_heating(kappa=0.5e-11)
+    mk.define_phase_diagram("current_density", np.linspace(min_current, max_current, 32),
+                            "pulse_duration",  np.linspace(min_duration*1e-9, max_duration*1e-9, 32))
     # mk.store_time_traces(interval=2e-12)
 
     sim = Simulation2D(mk)

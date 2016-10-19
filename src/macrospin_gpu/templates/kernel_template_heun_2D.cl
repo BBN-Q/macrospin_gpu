@@ -33,6 +33,7 @@ float get_envelope(float real_time, float duration) {
 
 float4 eval_torques(float4 m,
                     {%- if thermal -%}float4 dW,{% endif %}
+                    float real_time,
                     float {{first_loop_var}},
                     float {{second_loop_var}},
                     float envelope) {
@@ -81,7 +82,13 @@ float4 eval_torques(float4 m,
 
     {%- if thermal -%}
     // Stochastic terms
+        {% if heating %}
+    // float ct = pow(1.0f + {{kappa_over_tempSq}}f*current_density*current_density*real_time/5e-9f, 0.25f);
+    float ct = sqrt(1.0f + {{kappa_over_temp}}f*envelope*current_density*current_density*real_time/10e-9);
+    nudWxm   =  nuSqrtDt*ct*cross(dW,m);
+        {% else %}
     nudWxm   =  nuSqrtDt*cross(dW,m);
+        {% endif %}
     numxdWxm =  cross(m, nudWxm);
     {% endif -%}
 
@@ -134,11 +141,13 @@ __kernel void evolve(__global float4 *m,
     // m_bar = m + eval_torques(m)
     float4 torque_pred = eval_torques(m_loc,
                         {%- if thermal -%}dW_loc,{% endif %}
+                        real_time,
                         {{first_loop_var}},
                         {{second_loop_var}},
                         envelope);
     float4 torque_corr = eval_torques(m_loc + torque_pred,
                         {%- if thermal -%}dW_loc,{% endif %}
+                        real_time,
                         {{first_loop_var}},
                         {{second_loop_var}},
                         envelope_end);

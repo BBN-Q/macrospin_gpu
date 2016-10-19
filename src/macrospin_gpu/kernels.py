@@ -68,6 +68,7 @@ class Macrospin_2DPhaseDiagram(object):
         self.parameters['initial_pause'] = initial_pause
         self.parameters['dt'] = self.dt
         self.parameters['real_dt'] = self.real_dt
+        self.parameters['total_time'] = total_time
 
     def store_time_traces(self, interval=10.0e-12):
         if not hasattr(self, 'real_dt'):
@@ -149,10 +150,19 @@ class Macrospin_2DPhaseDiagram(object):
 
         # Width of thermal distribution
         self.nu = np.sqrt(2.0*self.damping*kB*self.temperature/(self.vol*self.Ms**2))
-        self.parameters['thermal']  = self.temperature > 0
-        self.parameters['nuSqrtDt'] = self.nu*np.sqrt(self.dt)
-        self.parameters['nu']       = self.nu
-        self.parameters['nu2']      = self.nu**2
+        self.parameters['thermal']     = self.temperature > 0
+        self.parameters['temperature'] = self.temperature
+        self.parameters['nuSqrtDt']    = self.nu*np.sqrt(self.dt)
+        self.parameters['nu']          = self.nu
+        self.parameters['nu2']         = self.nu**2
+
+    def add_heating(self, kappa=20e-17):
+        if not hasattr(self, 'nu'):
+            raise Exception("Must add thermal noise before adding heating.")
+        self.kappa                           = kappa
+        self.parameters['heating']           = True
+        self.parameters['kappa_over_tempSq'] = kappa/(self.temperature**2)
+        self.parameters['kappa_over_temp']   = kappa/(self.temperature)
 
     def define_phase_diagram(self, first_parameter_name, first_parameter_values,
                                    second_parameter_name, second_parameter_values):
