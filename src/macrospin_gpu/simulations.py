@@ -35,34 +35,38 @@ class Simulation2D(object):
         self.evolve = self.prg.evolve
         
         if self.mo.temperature > 0:
-            self.evolve.set_scalar_arg_dtypes([None, None, None, None, np.float32])
+            self.evolve.set_scalar_arg_dtypes([None, None, None, None, None, np.float32])
         else:
             print("No temp")
-            self.evolve.set_scalar_arg_dtypes([None, None, None, np.float32])
+            self.evolve.set_scalar_arg_dtypes([None, None, None, None, np.float32])
 
         self.reduce_m = self.prg.reduce_m
-        self.reduce_m.set_scalar_arg_dtypes([None, None, np.int32])
+        self.reduce_m.set_scalar_arg_dtypes([None, None, None, np.int32])
 
-        self.normalize_m = self.prg.normalize_m
+        # self.normalize_m = self.prg.normalize_m
 
         self.current_timepoint = 0
         self.update_m_of_t = self.prg.update_m_of_t
-        self.update_m_of_t.set_scalar_arg_dtypes([None, None, np.int32, np.int32, np.int32])
+        self.update_m_of_t.set_scalar_arg_dtypes([None, None, None, np.int32, np.int32, np.int32])
 
         # Define random number generator
         self.ran_gen = ran.RanluxGenerator(self.queue, luxury=0)
 
         # Declare the GPU bound arrays
-        self.m             = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float4)
+        self.theta         = cl.array.zeros(self.queue, self.mo.N, np.float32)
+        self.phi           = cl.array.zeros(self.queue, self.mo.N, np.float32)
         if self.mo.time_traces:
             self.m_of_t    = cl.array.zeros(self.queue, self.mo.pixels*self.mo.time_points, cl.array.vec.float4)
         self.dW            = cl.array.zeros(self.queue, self.mo.N, cl.array.vec.float4)
         self.phase_diagram = cl.array.zeros(self.queue, self.mo.pixels, np.float32)
 
         # Fill out the magnetization initial conditions and push to card
-        self.initial_m = np.zeros(self.mo.N, dtype=cl.array.vec.float4)
-        self.initial_m[:] = tuple(self.mo.initial_m)
-        cl.enqueue_copy(self.queue, self.m.data, self.initial_m)
+        self.initial_theta = np.zeros(self.mo.N, dtype=np.float32)
+        self.initial_phi   = np.zeros(self.mo.N, dtype=np.float32)
+        self.initial_theta[:] = self.mo.initial_theta
+        self.initial_phi[:]   = self.mo.initial_phi
+        cl.enqueue_copy(self.queue, self.theta.data, self.initial_theta)
+        cl.enqueue_copy(self.queue, self.phi.data, self.initial_phi)
 
         # Phase diagram values
         self.first_vals     = cl.Buffer(self.ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=self.mo.first_vals_np)
@@ -80,27 +84,20 @@ class Simulation2D(object):
                 self.evolve(self.queue,
                             (self.mo.first_val_steps*self.mo.thermal_realizations, self.mo.second_val_steps),
                             (self.mo.thermal_realizations, 1),
-                            self.m.data, self.dW.data, self.first_vals, self.second_vals, t).wait()
+                            self.theta.data, self.phi.data, self.dW.data, self.first_vals, self.second_vals, t).wait()
             else:
                 # Run a single LLG evolution step
                 self.evolve(self.queue,
                             (self.mo.first_val_steps*self.mo.thermal_realizations, self.mo.second_val_steps),
                             (self.mo.thermal_realizations, 1),
-                            self.m.data, self.first_vals, self.second_vals, t).wait()
-
-            # Periodic Normalizations
-            if (i%(self.mo.normalize_interval)==0):
-                self.normalize_m(self.queue,
-                                 (self.mo.first_val_steps*self.mo.thermal_realizations, self.mo.second_val_steps),
-                                 (self.mo.thermal_realizations, 1),
-                                 self.m.data).wait()
+                            self.theta.data, self.phi.data, self.first_vals, self.second_vals, t).wait()
 
             # Periodic Normalizations
             if self.mo.time_traces:
                 if (i%(self.mo.m_of_t_update_interval)==0):
                     self.update_m_of_t(self.queue,(self.mo.first_val_steps, self.mo.second_val_steps),
                                                   (1,1),
-                                                  self.m.data, self.m_of_t.data, 
+                                                  self.theta.data, self.phi.data, self.m_of_t.data, 
                                                   self.mo.time_points, self.mo.thermal_realizations,
                                                   self.current_timepoint%self.mo.time_points).wait()
                     self.current_timepoint += 1
@@ -110,7 +107,7 @@ class Simulation2D(object):
         self.reduce_m(self.queue,
                       (self.mo.first_val_steps, self.mo.second_val_steps),
                       (1,1),
-                      self.m.data, self.phase_diagram.data, self.mo.thermal_realizations).wait()
+                      self.theta.data, self.phi.data, self.phase_diagram.data, self.mo.thermal_realizations).wait()
 
         return self.phase_diagram.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps).transpose()
 

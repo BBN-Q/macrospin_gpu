@@ -52,10 +52,10 @@ class Macrospin_2DPhaseDiagram(object):
 
         # Main template
         self.dirname = os.path.dirname(__file__)
-        with open(self.dirname+"/templates/kernel_template_heun_2D.cl") as template_file:
+        with open(self.dirname+"/templates/kernel_template_heun_spherical_2D.cl") as template_file:
             self.main_template = template_file.read()
 
-    def set_evolution_properties(self, dt=1e-13, initial_pause=0.2e-9, total_time=1.4e-9, normalize_interval=50):
+    def set_evolution_properties(self, dt=1e-13, initial_pause=0.2e-9, total_time=1.4e-9):
         if not hasattr(self, 'Ms'):
             raise Exception("Must set magnetic properties before evolution properties")
         timeUnit     = (1.0+self.damping**2)/(gamma*self.Ms)    # Reduced units for numerical convnience
@@ -63,7 +63,7 @@ class Macrospin_2DPhaseDiagram(object):
         self.dt      = dt/timeUnit            # time in units of $\gamma M_s$
         self.total_time         = total_time
         self.total_steps        = int(total_time/self.real_dt)
-        self.normalize_interval = normalize_interval
+        # self.normalize_interval = normalize_interval
 
         self.parameters['initial_pause'] = initial_pause
         self.parameters['dt'] = self.dt
@@ -76,14 +76,17 @@ class Macrospin_2DPhaseDiagram(object):
         self.m_of_t_update_interval = int(interval/self.real_dt)
         self.time_points = int(self.total_time/interval)
 
-    def set_magnetic_properties(self, Ms=640.0, Hpma=0.0, damping=0.05, initial_m=[1,0,0]):
+    def set_magnetic_properties(self, Ms=640.0, Hpma=0.0, Hk=0.0, Hd=0.0, damping=0.05, initial_theta=np.pi/2, initial_phi=0.0):
         self.Ms      = Ms
         self.Hpma    = Hpma
+        self.Hk      = Hk
+        self.Hd      = Hd
         self.damping = damping
-        self.initial_m = initial_m
-        self.initial_m.append(0)
+        self.initial_theta = initial_theta
+        self.initial_phi = initial_phi
         self.parameters['Ms']    = Ms
-        self.parameters['Hpma']  = Hpma
+        self.parameters['hk']    = Hk/Ms
+        self.parameters['hd']    = (Hd - Hpma)/Ms
         self.parameters['alpha'] = damping
 
     def set_external_field(self, h):
@@ -102,9 +105,9 @@ class Macrospin_2DPhaseDiagram(object):
         if not hasattr(self, 'Hpma'):
             raise Exception("Must set magnetic properties before defining geometry.")
 
-        Nxx, Nyy, Nzz  = demagCylinder(length, width, thickness, cgs=True)
-        Nzz            = Nzz - self.Hpma/self.Ms
-        self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
+        # Nxx, Nyy, Nzz  = demagCylinder(length, width, thickness, cgs=True)
+        # Nzz            = Nzz - self.Hpma/self.Ms
+        # # self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
 
     def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm,
                         current_density=0.5e8, pulse_duration=1e-9,
@@ -114,7 +117,7 @@ class Macrospin_2DPhaseDiagram(object):
         this_torque = {}
 
         prefactor = 0.1*2.0*(lambda_asymm**2)*pol_strength*hbar # 0.1 for Amps->abAmps
-        prefactor = prefactor*(1.0-self.damping)/(2.0*ech*self.Ms*self.Ms*self.thickness*self.damping)
+        prefactor = prefactor*(1.0-self.damping)/(2.0*ech*self.Ms*self.Ms*self.thickness)
 
         assert len(pol_vector) == 3
 
@@ -150,9 +153,9 @@ class Macrospin_2DPhaseDiagram(object):
         # Width of thermal distribution
         self.nu = np.sqrt(2.0*self.damping*kB*self.temperature/(self.vol*self.Ms**2))
         self.parameters['thermal']  = self.temperature > 0
-        self.parameters['nuSqrtDt'] = self.nu*np.sqrt(self.dt)
-        self.parameters['nu']       = self.nu
-        self.parameters['nu2']      = self.nu**2
+        self.parameters['nu_prime'] = self.nu/np.sqrt(self.dt)
+        # self.parameters['nu']       = self.nu
+        # self.parameters['nu2']      = self.nu**2
 
     def define_phase_diagram(self, first_parameter_name, first_parameter_values,
                                    second_parameter_name, second_parameter_values):
