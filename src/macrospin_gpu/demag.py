@@ -73,13 +73,17 @@ def demagEllipsoid(length, width, height, cgs=False):
 if __name__=='__main__':
 
     # Some example use cases
-    a = demagCylinder(100,50,1.5)
+    a = demagCylinder(100,50,2)
     b = demagCylinder(100,50,0.75)
     c = demagCylinder(80,45,2)
 
     # These are the IP anisotropies
     Ms = 1200.0
-    print(4.0*np.pi*Ms*(a[1]-a[0]))
+    print(a)
+    print("Nyy-Nxx:", 4.0*np.pi*Ms*(a[1]-a[0]), "Oe")
+    print("Nyy-Nxx:", 4.0*np.pi*Ms*(a[1]-a[0])*(1e3/(4.0*np.pi)), "A/m")
+    print("Nzz:", a[2],  4.0*np.pi*Ms*(a[2]), "Oe")
+    print("Nzz:", a[2],  4.0*np.pi*Ms*(a[2])*(1e3/(4.0*np.pi)), "A/m")
     print(4.0*np.pi*Ms*(b[1]-b[0]))
 
     Ms = 640.0
