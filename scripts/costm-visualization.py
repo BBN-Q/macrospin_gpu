@@ -30,6 +30,7 @@ import time
 def clinit():
     """Initialize OpenCL with GL-CL interop.
     """
+    # import ipdb; ipdb.set_trace()
     plats = cl.get_platforms()
     # handling OSX
     if sys.platform == "darwin":
@@ -39,6 +40,15 @@ def clinit():
         ctx = cl.Context(properties=[
                             (cl.context_properties.PLATFORM, plats[0])]
                             + get_gl_sharing_context_properties())
+    # try:
+    #     ctx = cl.Context(properties=[
+    #         (cl.context_properties.PLATFORM, platform)]
+    #         + get_gl_sharing_context_properties())
+    # except:
+    #     ctx = cl.Context(properties=[
+    #         (cl.context_properties.PLATFORM, platform)]
+    #         + get_gl_sharing_context_properties(),
+    #         devices = [platform.get_devices()[0]])
     queue = cl.CommandQueue(ctx)
     return ctx, queue
 
@@ -209,7 +219,7 @@ class GLPlotWidget(QGLWidget):
         """
         # Beginning of execute loop
         start_time = time.time()
-
+        
         # get secure access to GL-CL interop objects
         cl.enqueue_acquire_gl_objects(self.queue, [self.glclbuf, self.colclbuf])
         
