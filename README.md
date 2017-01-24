@@ -1,6 +1,6 @@
 # Macrospin-GPU
 
-![macrospin_gpu](doc/COST-M-Vis.png =400x)
+![macrospin_gpu](doc/COST-M-Vis.png)
 
 Use PyOpenCL to run GPU code over many realizations of the Weiner process. A
 convenient Jinja2-based templating system is used to allow easy specification of
