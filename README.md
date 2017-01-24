@@ -1,26 +1,49 @@
 # Macrospin-GPU
-Using PyCUDA and/or PyOpenCL to run GPU code over many realizations of the Weiner process.
+
+![macrospin_gpu](doc/COST-M-Vis.png)
+
+Use PyOpenCL to run GPU code over many realizations of the Weiner process. A
+convenient Jinja2-based templating system is used to allow easy specification of
+physical geometry, magnetic properties, arbitrarily many spin-torque terms, and
+more.
 
 Until this is a proper package add the `src` folder to your python path.
 
 # Dependencies
 
-* [PyOpenCL](http://mathema.tician.de/software/pyopencl/)
-* [PyOpenGL](http://pyopengl.sourceforge.net/)
-* [PyCUDA](http://mathema.tician.de/software/pycuda/)
-* [tdqm](https://github.com/noamraph/tqdm) (progress bar)
-* PyQt4
-* [jinja2](http://jinja.pocoo.org/docs/dev/) templating GPU programs
+* [PyOpenCL](http://mathema.tician.de/software/pyopencl/) for computation
+* [PyOpenGL](http://pyopengl.sourceforge.net/) for visualization
+* [tdqm](https://github.com/noamraph/tqdm) for progress bar
+* [jinja2](http://jinja.pocoo.org/docs/dev/) templating GPU kernels
 
 # Installation
 
 ## OS X
-Installed out of the box on Windows.
+Installing PyOpenCL with pip can be unreliable. It is best to clone the github
+repository and work from there. Instead of working from the lastest and greatest
+version you may want to check out a recently tagged release:
+
+```shell
+git clone git@github.com:pyopencl/pyopencl.git
+cd pyopencl
+git checkout v2016.2.1
+python configure.py
+make -j4
+make install
+```
+In more recent builds of PyOpenCL, OpenGL interoperation should come for free.
+Older versions required configuring with the `--cl-enable-gl` option.
+
+It may be possible to use PyOpenCL from Anaconda, but I have not had a chance to
+test this path.
 
 ## Windows
-Use the Anaconda python distribution
+Use the Anaconda python distribution.
 
 ## Linux
+
+It may be possible to use PyOpenCL from Anaconda, but I have not had a chance to
+test this path. There is a bit more configuration to be done on Linux.
 
 ### NVIDIA Drivers with Prime
 
@@ -31,12 +54,14 @@ for NVIDIA support and the generic `opencl-header`, `ocl-icd-libopencl1` and
 works. Need to have Nvidia card powered up using Prime.
 
 ### Build and install PyOpenCL
-There is an [open issue](https://github.com/pyopencl/pyopencl/issues/81) with recent versions of PyOpenCL and gcc 4.8/4.9. Work around by checking out `v2015.1`.
+Again, manually building is recommended.
 
-    ```shell
-    git clone git@github.com:pyopencl/pyopencl.git
-    cd pyopencl
-    git checkout v2015.1
-    python configure.py --cl-inc-dir=/opt/intel/opencl-1.2-sdk-5.0.0.43/include/ --cl-lib-dir=/opt/intel/opencl-1.2-5.0.0.43/lib64/
-    make install
-    ```
+  ```shell
+  git clone git@github.com:pyopencl/pyopencl.git
+  cd pyopencl
+  git checkout v2016.2.1
+  python configure.py --cl-inc-dir=/opt/intel/opencl-1.2-sdk-5.0.0.43/include/ \
+                      --cl-lib-dir=/opt/intel/opencl-1.2-5.0.0.43/lib64/
+  make -j4
+  make install
+  ```

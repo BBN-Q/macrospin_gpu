@@ -1,0 +1,6 @@
+numpy >= 1.11.1
+scipy >= 0.17.1
+pyopencl >= 2016.2.1
+pyopengl >= 3.1.0
+jinja2 >= 2.9.4
+tqdm >= 4.7.0
