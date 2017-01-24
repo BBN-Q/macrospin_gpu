@@ -7,8 +7,6 @@ convenient Jinja2-based templating system is used to allow easy specification of
 physical geometry, magnetic properties, arbitrarily many spin-torque terms, and
 more.
 
-Until this is a proper package add the `src` folder to your python path.
-
 # Dependencies
 
 * [PyOpenCL](http://mathema.tician.de/software/pyopencl/) for computation
@@ -17,6 +15,20 @@ Until this is a proper package add the `src` folder to your python path.
 * [jinja2](http://jinja.pocoo.org/docs/dev/) templating GPU kernels
 
 # Installation
+
+Installing `macrospin_gpu` itself is quite simple. It's best to ensure that
+PyOpenCL is properly installed (as described below) before continuing. At that
+point you should simply be able to run:
+
+```shell
+git clone git@github.com:BBN-Q/macrospin_gpu.git
+cd macrospin_gpu
+pip install -e .
+```
+
+Try out some of the examples in `scripts/` to get started. Eventually I'll add
+some legitimate documentation, but until that point the examples should be sufficient.
+OpenGL visualizations can be seen in the `scripts/costm-visualization.py` script.
 
 ## OS X
 Installing PyOpenCL with pip can be unreliable. It is best to clone the github
