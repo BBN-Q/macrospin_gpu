@@ -5,8 +5,8 @@ from __future__ import absolute_import, print_function
 import numpy as np
 
 # PyQt4 imports
-from   PyQt4 import QtGui, QtCore, QtOpenGL
-from   PyQt4.QtOpenGL import QGLWidget
+from   PyQt5 import QtGui, QtCore, QtOpenGL, QtWidgets
+from   PyQt5.QtOpenGL import QGLWidget
 
 # PyOpenGL imports
 import OpenGL.GL as gl
@@ -345,10 +345,10 @@ class GLPlotWidget(QGLWidget):
            self.current_time = 0.0
 
     def mousePressEvent(self, event):
-        self.last_pos = event.posF()
+        self.last_pos = event.pos()
 
     def mouseMoveEvent(self, event):
-        dxy = event.posF() - self.last_pos
+        dxy = event.pos() - self.last_pos
         dx = dxy.x()
         dy = dxy.y()
 
@@ -359,7 +359,7 @@ class GLPlotWidget(QGLWidget):
                 self.delta_x += 0.2*dx
                 self.delta_y += 0.2*dy
 
-        self.last_pos = event.posF()
+        self.last_pos = event.pos()
 
     def wheelEvent(self, event):
         self.distance += 0.002*event.delta()
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     import numpy as np
 
     # define a Qt window with an OpenGL widget inside it
-    class TestWindow(QtGui.QMainWindow):
+    class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
 
@@ -390,7 +390,7 @@ if __name__ == '__main__':
             self.widget.keyPressEvent(event)
 
     # create the Qt App and window
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     window = TestWindow()
     window.show()
     app.exec_()
