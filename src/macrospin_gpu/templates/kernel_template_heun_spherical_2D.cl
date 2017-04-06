@@ -46,8 +46,8 @@ float2 eval_torques(float theta, float phi,
     float4 heff = hext;
 
     // Subtract the demag field
-    heff.x = heff.x + hk*m.x;
-    heff.z = heff.z - hd*m.z;
+    heff.x += hk*m.x;
+    heff.z -= hd*m.z;
 
     {% if thermal -%}
     // Add the thermal fields, which are pre-multiplied by dW/dt in order
@@ -68,7 +68,7 @@ float2 eval_torques(float theta, float phi,
     {% for t in stt_torques %}
     p = (float4)({{t.pol_x}}f, {{t.pol_y}}f, {{t.pol_z}}f, 0.0f);
     m_dot_p = dot(p, m);
-    stt = stt + p*{{t.prefac}}f*current_density*envelope/fma({{t.l2_m1}}f, m_dot_p, {{t.l2_p1}}f);
+    stt += p*{{t.prefac}}f*current_density*envelope/fma({{t.l2_m1}}f, m_dot_p, {{t.l2_p1}}f);
     {% endfor -%}
     {% endif %}
 
