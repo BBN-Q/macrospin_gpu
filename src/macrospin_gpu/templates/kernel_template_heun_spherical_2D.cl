@@ -49,27 +49,27 @@ float2 eval_torques(float theta, float phi,
     heff.x = heff.x + hk*m.x;
     heff.z = heff.z - hd*m.z;
 
-    {%- if thermal -%}
+    {% if thermal -%}
     // Add the thermal fields, which are pre-multiplied by dW/dt in order
     // give dW when multiplied by dt below.
     heff = heff + nu_prime*dW;
-    {% endif -%}
+    {% endif %}
 
     // Any other effective fields added here
     {% for eff in effective_fields %}
-        heff = heff + {{eff}};
-    {% endfor -%}
+    heff = heff + {{eff}};
+    {% endfor %}
 
     // Any non-conservative torques added here
     {% if stt -%}
     float4 stt = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
     float4 p;
     float m_dot_p;
-        {% for t in stt_torques %}
+    {% for t in stt_torques %}
     p = (float4)({{t.pol_x}}f, {{t.pol_y}}f, {{t.pol_z}}f, 0.0f);
     m_dot_p = dot(p, m);
     stt = stt + p*{{t.prefac}}f*current_density*envelope/fma({{t.l2_m1}}f, m_dot_p, {{t.l2_p1}}f);
-        {% endfor -%}
+    {% endfor -%}
     {% endif %}
 
     // Add Oersted Field
@@ -176,6 +176,6 @@ __kernel void update_m_of_t(__global float *theta, __global float *phi, __global
 
     // float4 mloc = (float4)(sinT*cosP, sinT*sinP, cosT, 1.0f); //m[i*realizations];
     // mloc.w = 1.0f;
-    m_of_t[i*time_points + current_index] = (float4)(sinT*cosP, sinT*sinP, cosT, 1.0f); 
+    m_of_t[i*time_points + current_index] = (float4)(sinT*cosP, sinT*sinP, cosT, 1.0f);
 
 }
