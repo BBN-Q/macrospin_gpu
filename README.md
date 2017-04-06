@@ -54,29 +54,35 @@ Use the Anaconda python distribution.
 
 ## Linux
 
-It may be possible to use PyOpenCL from Anaconda, but I have not had a chance to
-test this path. There is a bit more configuration to be done on Linux.
+PyOpenCL is not available from Anaconda so there is a bit more configuration to
+be done on Linux.
 
 ### NVIDIA Drivers with Prime
 
-Tested on Linux Mint 18 with nvidia 361 drivers.  Have installed following
-packages: `nvidia-361,``nvidia-opencl-icd-361`, `nvida-settings`, `nvidia-prime`
-for NVIDIA support and the generic `opencl-header`, `ocl-icd-libopencl1` and
-`ocl-icd-opencl-dev` for building OpenCL program and `clinfo` to see if anything
-works. Need to have Nvidia card powered up using Prime.
+Tested on Linux Mint 18.1 with nvidia 378 drivers.  Have installed following
+packages: `nvidia-378`, `nvidia-opencl-icd-378`, `nvida-settings`,
+`nvidia-prime` and `nvidia-modprobe-361`  for NVIDIA support and the generic
+`opencl-headers`, `ocl-icd-libopencl1` and `ocl-icd-opencl-dev` for building
+OpenCL program and `clinfo` to see if anything works. Need to have Nvidia card
+powered up using Prime.
 
 ### Build and install PyOpenCL
-Again, manually building is recommended.
 
-  ```shell
-  git clone git@github.com:pyopencl/pyopencl.git
-  cd pyopencl
-  git checkout v2016.2.1
-  python configure.py --cl-inc-dir=/opt/intel/opencl-1.2-sdk-5.0.0.43/include/ \
-                      --cl-lib-dir=/opt/intel/opencl-1.2-5.0.0.43/lib64/
-  make -j4
-  make install
-  ```
+Again, manually building is recommended. On modern Linux distributions when
+using Anaconda Python there may be a conflict between the system `libstdc++` and
+the one Anaconda ship. If you see errors with "undefined symbols" when trying to
+import `pyopencl`, you may have to using Anaconda gcc to build PyOpenCL or
+rename the Anaconda `libstdc++`. See this [SO
+answer](http://stackoverflow.com/a/43244137/5445278) for details.
+
+```shell
+git clone git@github.com:pyopencl/pyopencl.git
+cd pyopencl
+git checkout v2016.2.1
+./configure.py
+make -j4
+make install
+```
 
 ## Funding
 
