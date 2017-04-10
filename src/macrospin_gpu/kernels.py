@@ -13,7 +13,6 @@ from   macrospin_gpu.demag import demagCylinder
 
 # Built ins
 import os
-import sys
 
 # Physical Constants in CGS
 # Watch out for AbAmps!
