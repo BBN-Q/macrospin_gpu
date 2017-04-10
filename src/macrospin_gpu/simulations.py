@@ -17,7 +17,7 @@ import os
 import time
 
 class Simulation2D(object):
-    """docstring for Simulation2D"""
+    """2D phase diagram macrospin simulation runner"""
     def __init__(self, macrospin_object):
         super(Simulation2D, self).__init__()
 
@@ -31,9 +31,9 @@ class Simulation2D(object):
         self.ctx    = cl.create_some_context()
         self.queue  = cl.CommandQueue(self.ctx)
         self.prg    = cl.Program(self.ctx, kernel_text).build()
-        
+
         self.evolve = self.prg.evolve
-        
+
         if self.mo.temperature > 0:
             self.evolve.set_scalar_arg_dtypes([None, None, None, None, None, np.float32])
         else:
@@ -97,13 +97,14 @@ class Simulation2D(object):
                 if (i%(self.mo.m_of_t_update_interval)==0):
                     self.update_m_of_t(self.queue,(self.mo.first_val_steps, self.mo.second_val_steps),
                                                   (1,1),
-                                                  self.theta.data, self.phi.data, self.m_of_t.data, 
+                                                  self.theta.data, self.phi.data, self.m_of_t.data,
                                                   self.mo.time_points, self.mo.thermal_realizations,
                                                   self.current_timepoint%self.mo.time_points).wait()
                     self.current_timepoint += 1
 
 
     def get_phase_diagram(self):
+        """Return the phase diagram averaged over thermal realizations"""
         self.reduce_m(self.queue,
                       (self.mo.first_val_steps, self.mo.second_val_steps),
                       (1,1),
@@ -112,4 +113,5 @@ class Simulation2D(object):
         return self.phase_diagram.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps).transpose()
 
     def get_time_traces(self):
+        """Return the time traces of all individual thermal realizations"""
         return self.m_of_t.get().reshape(self.mo.second_val_steps, self.mo.first_val_steps, self.mo.time_points)

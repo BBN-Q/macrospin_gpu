@@ -4,12 +4,12 @@
 # Numerical libraries
 import numpy as np
 
-# Tempalting imports
+# Templating imports
 import jinja2 as jj
 from   jinja2 import Template
 
 # Physics imports
-from   macrospin_gpu.demag import demagCylinder
+from macrospin_gpu.demag import demagCylinder
 
 # Built ins
 import os
@@ -56,6 +56,18 @@ class Macrospin_2DPhaseDiagram(object):
             self.main_template = template_file.read()
 
     def set_evolution_properties(self, dt=1e-13, initial_pause=0.2e-9, total_time=1.4e-9):
+        """Set the pulse timing properties.
+
+        Since time is rescaled, magnetic properties must be set before calling
+        this function.
+
+        Parameters
+        ---------
+            dt : differential equation timestep (seconds)
+            initial_pause : thermalization wait-time before start of pulse (seconds)
+            total_time : total simulation time (seconds)
+        """
+
         if not hasattr(self, 'Ms'):
             raise Exception("Must set magnetic properties before evolution properties")
         timeUnit     = (1.0+self.damping**2)/(gamma*self.Ms)    # Reduced units for numerical convnience
@@ -77,6 +89,19 @@ class Macrospin_2DPhaseDiagram(object):
         self.time_points = int(self.total_time/interval)
 
     def set_magnetic_properties(self, Ms=640.0, Hpma=0.0, Hk=0.0, Hd=0.0, damping=0.05, initial_theta=np.pi/2, initial_phi=0.0):
+        """Set the magnetic properties of the free layer
+
+        Parameters
+        ---------
+            Ms : saturation magnetization (10^3 A/m)
+            Hpma : ???
+            Hk : anisotropy field; assumed along +x axis
+            Hd : demag. field; assumed along -z axis
+            damping : Gilbert damping parameter
+            initial_theta : initial polar angle (radians)
+            initial_phi : initial azimuthal angle (radians)
+
+        """
         self.Ms      = Ms
         self.Hpma    = Hpma
         self.Hk      = Hk
@@ -90,11 +115,29 @@ class Macrospin_2DPhaseDiagram(object):
         self.parameters['alpha'] = damping
 
     def set_external_field(self, h):
+        """Set the external field.
+
+        Parameters
+        ----------
+            h : 3-vector of external field (units ???)
+        """
         assert len(h) == 3
         h.append(0)
         self.parameters['hext'] = [hi/self.Ms for hi in h]
 
     def set_geometry(self, length, width, thickness):
+        """ Set the dimensions of the free layer.
+
+        Since this will update the demag. tensor magnetic properties must be set
+        before calling this function.
+
+        All in meters.
+        Parameters
+        ---------
+            length :
+            width :
+            thickness :
+        """
         # Specified in nm, converted to cm
         self.length    = length*1e-7
         self.width     = width*1e-7
@@ -112,6 +155,22 @@ class Macrospin_2DPhaseDiagram(object):
     def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm,
                         current_density=0.5e8, pulse_duration=1e-9,
                         square_pulse=True, rise_time=60.0e-12, fall_time=110.0e-12):
+        """Add a spin-torque term to the simulations.
+
+        For scaling purposes, geometric and magnetic parammeters must have first
+        been set through `set_geometry` and `set_magnetic_properties`
+
+        Parameters
+        ----------
+            pol_vector : three-vector polarization direction
+            pol_strength : spin-torque polarization
+            lambda_asymm : spin-torque asymmetery
+            current_density : current density (A/m^2)
+            pulse_duration : length current pulse is on (seconds)
+            square_pulse : whether to use a ideal square pulse or round by `rise_time` and `fall_time`
+            rise_time : rise time of the pulse (seconds)
+            fall_time : fall time of the pulse (seconds)
+        """
 
         self.parameters['stt'] = True
         this_torque = {}
@@ -138,6 +197,15 @@ class Macrospin_2DPhaseDiagram(object):
         self.parameters['pulse_duration']  = pulse_duration
 
     def enable_oersted_field(self, field_direction=[1,0,0]):
+        """Enable an Oersted field
+
+        For scaling purposes, geometric and magnetic parammeters must have first
+        been set through `set_geometry` and `set_magnetic_properties`
+
+        Parameters
+        ----------
+            field_direction : 3-vector of Oersted field direction
+        """
         if not hasattr(self, 'thickness'):
             raise Exception("Must set geometry before enabling oersted field.")
         self.parameters['oersted'] = True
@@ -147,6 +215,18 @@ class Macrospin_2DPhaseDiagram(object):
         self.parameters['h_oe_z']  = float(field_direction[2])
 
     def add_thermal_noise(self, temperature, thermal_realizations=16):
+        """Add a finite temperature to the simulation.
+
+        This is added as a random magnetic field and does not affect the initial
+        state. A thermalized initial state is achieved with the `initial_pause`
+        in `set_evolution_properties`.
+
+        Parameters
+        ----------
+            temperature : temperature of the device (K)
+            thermal_realizations : number of runs to average random thermal field over
+        """
+
         self.temperature          = temperature
         self.thermal_realizations = thermal_realizations
 
@@ -159,6 +239,18 @@ class Macrospin_2DPhaseDiagram(object):
 
     def define_phase_diagram(self, first_parameter_name, first_parameter_values,
                                    second_parameter_name, second_parameter_values):
+        """Define the 2D phase diagram to sweep over.
+
+        The swept parameters must be already be in the class `parameters`
+        dictionary.
+
+        Parameters
+        ----------
+            first_parameter_name : label of the first axis
+            first_parameter_values : numpy array of first axis values
+            second_parameter_name : label of the second axis
+            second_parameter_values : numpy array of second axis values
+        """
 
         assert first_parameter_name in self.parameters
         assert second_parameter_name in self.parameters
@@ -174,6 +266,7 @@ class Macrospin_2DPhaseDiagram(object):
         self.second_vals_np = second_parameter_values.astype(np.float32)
 
     def render_kernel(self):
+        """Render the templated OpenCL kernels and helper functions."""
         # Define some final constants
         self.pixels = self.first_val_steps*self.second_val_steps
         self.N      = self.first_val_steps*self.second_val_steps*self.thermal_realizations
