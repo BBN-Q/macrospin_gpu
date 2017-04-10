@@ -21,6 +21,7 @@ if __name__ == '__main__':
     mk.set_geometry(100,50,3)
     mk.add_spin_torque([0.0,0.0,1.0], 0.16, 1.49)
     mk.add_spin_torque([-1.0,0.0,0.0], 0.00, 1.49)
+    mk.set_pulse_properties()
     mk.add_thermal_noise(0.0, 1)
     mk.define_phase_diagram("current_density", np.linspace(min_current, max_current, 64),
                             "pulse_duration",  np.linspace(min_duration*1e-9, max_duration*1e-9, 64))

@@ -152,9 +152,7 @@ class Macrospin_2DPhaseDiagram(object):
         # Nzz            = Nzz - self.Hpma/self.Ms
         # # self.parameters['demag_tensor'] = [Nxx, Nyy, Nzz, 0.0]
 
-    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm,
-                        current_density=0.5e8, pulse_duration=1e-9,
-                        square_pulse=True, rise_time=60.0e-12, fall_time=110.0e-12):
+    def add_spin_torque(self, pol_vector, pol_strength, lambda_asymm):
         """Add a spin-torque term to the simulations.
 
         For scaling purposes, geometric and magnetic parammeters must have first
@@ -165,13 +163,7 @@ class Macrospin_2DPhaseDiagram(object):
             pol_vector : three-vector polarization direction
             pol_strength : spin-torque polarization
             lambda_asymm : spin-torque asymmetery
-            current_density : current density (A/m^2)
-            pulse_duration : length current pulse is on (seconds)
-            square_pulse : whether to use a ideal square pulse or round by `rise_time` and `fall_time`
-            rise_time : rise time of the pulse (seconds)
-            fall_time : fall time of the pulse (seconds)
         """
-
         self.parameters['stt'] = True
         this_torque = {}
 
@@ -187,14 +179,26 @@ class Macrospin_2DPhaseDiagram(object):
         this_torque['l2_m1']  = lambda_asymm**2 - 1.0
         this_torque['prefac'] = prefactor
         self.spin_torques.append(this_torque)
+        self.parameters['stt_torques'] = self.spin_torques
 
-        self.parameters['square_pulse'] = square_pulse
-        self.parameters['rise_time']    = rise_time
-        self.parameters['fall_time']    = fall_time
+    def set_pulse_properties(self, current_density=0.5e8, pulse_duration=1e-9,
+                                   square_pulse=True, rise_time=60.0e-12,
+                                   fall_time=110.0e-12):
+        """ Set the current pulse properties.
 
-        self.parameters['stt_torques']     = self.spin_torques
+        Parameters
+        ----------
+            current_density : current density (A/m^2)
+            pulse_duration : length current pulse is on (seconds)
+            square_pulse : whether to use a ideal square pulse or round by `rise_time` and `fall_time`
+            rise_time : rise time of the pulse (seconds)
+            fall_time : fall time of the pulse (seconds)
+        """
         self.parameters['current_density'] = current_density
         self.parameters['pulse_duration']  = pulse_duration
+        self.parameters['square_pulse']    = square_pulse
+        self.parameters['rise_time']       = rise_time
+        self.parameters['fall_time']       = fall_time
 
     def enable_oersted_field(self, field_direction=[1,0,0]):
         """Enable an Oersted field
