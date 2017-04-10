@@ -131,14 +131,14 @@ class Macrospin_2DPhaseDiagram(object):
         Since this will update the demag. tensor magnetic properties must be set
         before calling this function.
 
-        All in meters.
+        All dimensions in nanometers.
         Parameters
         ---------
             length :
             width :
             thickness :
         """
-        # Specified in nm, converted to cm
+        # converted to cm for units
         self.length    = length*1e-7
         self.width     = width*1e-7
         self.thickness = thickness*1e-7
